@@ -73,7 +73,11 @@ public sealed record MediaSessionSnapshot(
     MediaTimelineSnapshot Timeline,
     bool HasThumbnailStream,
     int ThumbnailByteCount,
-    DateTimeOffset CapturedAtUtc);
+    DateTimeOffset CapturedAtUtc)
+{
+    // Optional, bounded image data supplied by the media application.
+    public byte[]? ThumbnailData { get; init; }
+}
 
 /// <summary>
 /// Resultado del diagnóstico de viabilidad sobre GSMTC.

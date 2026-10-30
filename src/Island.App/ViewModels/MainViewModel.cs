@@ -8,6 +8,9 @@ using Island.Core.Contracts;
 using Island.Core.Domain;
 using Island.Core.Theming;
 using Microsoft.UI.Dispatching;
+using Microsoft.UI.Xaml.Media;
+using Microsoft.UI.Xaml.Media.Imaging;
+using Windows.Storage.Streams;
 
 namespace Island.App.ViewModels;
 
@@ -28,6 +31,11 @@ public sealed partial class MainViewModel : ObservableObject
     private AppSettingsDocument _currentSettings;
     private IReadOnlyList<MediaSessionSnapshot> _lastKnownSessions = [];
     private DispatcherQueue? _dispatcherQueue;
+    private byte[]? _lastArtworkData;
+    private int _artworkGeneration;
+
+    [ObservableProperty]
+    public partial ImageSource? MediaArtwork { get; set; }
 
     public event EventHandler? LayoutOrThemeUpdated;
 
@@ -382,6 +390,31 @@ public sealed partial class MainViewModel : ObservableObject
         UpdateMediaSessionsSnapshot(probe.Sessions);
     }
 
+    private async Task UpdateArtworkAsync(byte[]? bytes, int generation)
+    {
+        MediaArtwork = null;
+        if (bytes is null || bytes.Length == 0) return;
+        try
+        {
+            using var stream = new InMemoryRandomAccessStream();
+            using (var writer = new DataWriter(stream.GetOutputStreamAt(0)))
+            {
+                writer.WriteBytes(bytes);
+                await writer.StoreAsync();
+                await writer.FlushAsync();
+                writer.DetachStream();
+            }
+            stream.Seek(0);
+            var bitmap = new BitmapImage();
+            await bitmap.SetSourceAsync(stream);
+            if (generation == _artworkGeneration) MediaArtwork = bitmap;
+        }
+        catch (Exception)
+        {
+            if (generation == _artworkGeneration) MediaArtwork = null;
+        }
+    }
+
     [RelayCommand]
     private async Task NextTrackAsync()
     {
@@ -528,6 +561,13 @@ public sealed partial class MainViewModel : ObservableObject
         PinGlyph = IsPinned ? "\uE77A" : "\uE718";
 
         var media = _coordinator.ActiveMediaView;
+        var artwork = media is null ? null : _lastKnownSessions.FirstOrDefault(s =>
+            string.Equals(s.SourceAppUserModelId, media.SourceAppUserModelId, StringComparison.OrdinalIgnoreCase))?.ThumbnailData;
+        if (!ReferenceEquals(artwork, _lastArtworkData))
+        {
+            _lastArtworkData = artwork;
+            _ = UpdateArtworkAsync(artwork, ++_artworkGeneration);
+        }
         if (media is not null)
         {
             MediaTitleText = media.Title;

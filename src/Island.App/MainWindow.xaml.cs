@@ -27,6 +27,7 @@ public sealed partial class MainWindow : Window
     private (int X, int Y)? _dragStart;
     private ScreenRectPx? _dragBounds;
     private bool _dragMoved;
+    private bool _openAfterClick;
     private int _dragAnchorY;
 
     public bool IsDragging => _dragStart.HasValue;
@@ -104,6 +105,7 @@ public sealed partial class MainWindow : Window
             ? originalMonitor.WorkAreaPx.Y + (int)Math.Round(originalMonitor.WorkAreaPx.Height * ratio)
             : _dragBounds.Y + (int)Math.Round(14.0 * (originalMonitor?.DpiY ?? 96) / 96.0);
         _dragMoved = false;
+        _openAfterClick = ReferenceEquals(sender, IslandPillBorder) && !ViewModel.IsExpandedMode;
         if (_dragStart.HasValue) element.CapturePointer(e.Pointer);
         e.Handled = true;
     }
@@ -129,15 +131,23 @@ public sealed partial class MainWindow : Window
 
     private void OnDragReleased(object sender, PointerRoutedEventArgs e)
     {
+        if (!_dragStart.HasValue) return;
+        bool open = _openAfterClick && !_dragMoved;
         if (_dragMoved && ViewModel.PreferredMonitorDeviceName is { } monitor && ViewModel.CurrentSettings.AnchorVerticalRatio is double vertical)
             ViewModel.MoveAnchor(monitor, ViewModel.CurrentSettings.AnchorHorizontalRatio, vertical, true);
         _dragStart = null;
         _dragBounds = null;
+        _openAfterClick = false;
         if (sender is UIElement element) element.ReleasePointerCapture(e.Pointer);
+        if (open) ViewModel.ToggleExpandedCommand.Execute(null);
         e.Handled = true;
     }
 
-    private void OnDragCaptureLost(object sender, PointerRoutedEventArgs e) => OnDragReleased(sender, e);
+    private void OnDragCaptureLost(object sender, PointerRoutedEventArgs e)
+    {
+        _openAfterClick = false;
+        OnDragReleased(sender, e);
+    }
 
     private void OnPillPointerEntered(object sender, PointerRoutedEventArgs e)
     {
@@ -153,8 +163,7 @@ public sealed partial class MainWindow : Window
         // Nivel 1 o Nivel 2 -> Nivel 3: un clic en cualquier parte de la píldora la despliega por completo.
         if (!ViewModel.IsExpandedMode)
         {
-            ViewModel.ToggleExpandedCommand.Execute(null);
-            e.Handled = true;
+            OnDragPressed(sender, e);
         }
     }
 

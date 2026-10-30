@@ -11,7 +11,7 @@ namespace Island.Windows.Media;
 /// </summary>
 public sealed class GsmtcMediaSessionProvider : IMediaSessionProvider
 {
-    private const int MaxThumbnailInspectBytes = 256 * 1024;
+    private const int MaxThumbnailInspectBytes = 2 * 1024 * 1024;
 
     private readonly IDiagnosticLogger _logger;
     private readonly TimeProvider _timeProvider;
@@ -241,6 +241,7 @@ public sealed class GsmtcMediaSessionProvider : IMediaSessionProvider
         string album = string.Empty;
         bool hasThumbnail = false;
         int thumbnailBytes = 0;
+        byte[]? thumbnailData = null;
 
         try
         {
@@ -257,7 +258,17 @@ public sealed class GsmtcMediaSessionProvider : IMediaSessionProvider
                     if (stream is not null && stream.Size > 0)
                     {
                         hasThumbnail = true;
-                        thumbnailBytes = (int)Math.Min(stream.Size, (ulong)MaxThumbnailInspectBytes);
+                        thumbnailBytes = (int)Math.Min(stream.Size, (ulong)int.MaxValue);
+                        if (stream.Size <= MaxThumbnailInspectBytes)
+                        {
+                            using var reader = new DataReader(stream.GetInputStreamAt(0));
+                            uint loaded = await reader.LoadAsync((uint)stream.Size);
+                            if (loaded == stream.Size)
+                            {
+                                thumbnailData = new byte[loaded];
+                                reader.ReadBytes(thumbnailData);
+                            }
+                        }
                     }
                 }
             }
@@ -279,7 +290,7 @@ public sealed class GsmtcMediaSessionProvider : IMediaSessionProvider
             Timeline: timeline,
             HasThumbnailStream: hasThumbnail,
             ThumbnailByteCount: thumbnailBytes,
-            CapturedAtUtc: now);
+            CapturedAtUtc: now) { ThumbnailData = thumbnailData };
     }
 
     private static MediaPlaybackState MapPlaybackStatus(GlobalSystemMediaTransportControlsSessionPlaybackStatus? status) =>

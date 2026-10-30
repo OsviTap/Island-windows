@@ -18,9 +18,9 @@
                 <Setter Property="Foreground" Value="#FFE4E4E7" />
                 <Setter Property="BorderBrush" Value="#24FFFFFF" />
                 <Setter Property="BorderThickness" Value="1" />
-                <Setter Property="CornerRadius" Value="10" />
-                <Setter Property="Padding" Value="9,3" />
-                <Setter Property="MinHeight" Value="24" />
+                <Setter Property="CornerRadius" Value="12" />
+                <Setter Property="Padding" Value="10,5" />
+                <Setter Property="MinHeight" Value="30" />
                 <Setter Property="MinWidth" Value="0" />
                 <Setter Property="FontSize" Value="11" />
                 <Setter Property="FontWeight" Value="SemiBold" />
@@ -74,7 +74,11 @@
             CornerRadius="8"
             Padding="10,4"
             PointerEntered="OnPillPointerEntered"
-            PointerPressed="OnPillPointerPressed">
+            PointerPressed="OnPillPointerPressed"
+            PointerMoved="OnDragMoved"
+            PointerReleased="OnDragReleased"
+            PointerCaptureLost="OnDragCaptureLost"
+            ToolTipService.ToolTip="Haz clic para abrir o arrastra para mover">
 
             <Grid>
                 <!-- ========================================================================= -->
@@ -211,8 +215,8 @@
                 <Grid
                     x:Name="ExpandedContentGrid"
                     Visibility="{x:Bind ViewModel.IsExpandedMode, Mode=OneWay}"
-                    RowSpacing="8"
-                    Padding="2,3"
+                    RowSpacing="10"
+                    Padding="4,5"
                     VerticalAlignment="Stretch">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto" />
@@ -337,11 +341,11 @@
                     <!-- Fila 1: Tarjeta Multimedia traslúcida con Marquee y controles circulares -->
                     <Border
                         Grid.Row="1"
-                        Background="#18FFFFFF"
-                        BorderBrush="#22FFFFFF"
+                        Background="#2418202D"
+                        BorderBrush="#30FFFFFF"
                         BorderThickness="1"
-                        CornerRadius="12"
-                        Padding="10,8">
+                        CornerRadius="14"
+                        Padding="12,10">
                         <Grid ColumnSpacing="10">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="Auto" />
@@ -352,13 +356,14 @@
                             <!-- Emblema musical -->
                             <Border
                                 Grid.Column="0"
-                                Width="38"
-                                Height="38"
-                                CornerRadius="10"
+                                Width="48"
+                                Height="48"
+                                CornerRadius="12"
                                 Background="#2638BDF8"
                                 BorderBrush="#4D38BDF8"
                                 BorderThickness="1"
                                 VerticalAlignment="Center">
+                                <Grid>
                                 <FontIcon
                                     FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets"
                                     Glyph="&#xEC4F;"
@@ -366,6 +371,10 @@
                                     Foreground="#FF38BDF8"
                                     HorizontalAlignment="Center"
                                     VerticalAlignment="Center" />
+                                <Image Source="{x:Bind ViewModel.MediaArtwork, Mode=OneWay}"
+                                       Width="48" Height="48" Stretch="UniformToFill"
+                                       AutomationProperties.Name="Portada de la reproducción actual" />
+                                </Grid>
                             </Border>
 
                             <!-- Metadatos de pista (con desplazamiento horizontal) y artista -->
@@ -379,7 +388,7 @@
                                     <TextBlock
                                         x:Name="MediaTitleTextBlock"
                                         Text="{x:Bind ViewModel.MediaTitleText, Mode=OneWay}"
-                                        FontSize="13"
+                                        FontSize="14"
                                         FontWeight="SemiBold"
                                         Foreground="#FFF4F4F5"
                                         MaxLines="1">

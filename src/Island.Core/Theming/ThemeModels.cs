@@ -125,8 +125,8 @@ public static class BuiltInThemes
         CornerRadius: 16.0,
         CompactWidth: 260.0,
         CompactHeight: 40.0,
-        ExpandedWidth: 420.0,
-        ExpandedHeight: 214.0,
+        ExpandedWidth: 460.0,
+        ExpandedHeight: 242.0,
         Colors: new ThemeSemanticColors(
             BackgroundHex: "#FF111318",
             ForegroundHex: "#FFF4F4F5",

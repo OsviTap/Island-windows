@@ -1,5 +1,12 @@
 # 00. Bitácora General del Proyecto — Isla Flotante para Windows 11
 
+## Portada y arrastre en las tres vistas — 30/10/2026
+
+- Se añadió arrastre desde las vistas pequeña y compacta; un clic sin arrastrar abre el panel. El encabezado sigue sirviendo para mover el panel abierto.
+- La interfaz recibe la portada proporcionada por la sesión multimedia, con un límite de 2 MB y un icono de respaldo cuando no hay imagen. Se evita mostrar una carga anterior tras cambiar de pista.
+- Se aumentó el espacio del panel y de la portada, y se ajustaron superficies y controles. Se mantiene WinUI 3, que ya forma parte de la aplicación.
+- Preparado en Linux sin SDK .NET ni interfaz Windows: compilación y comportamiento real de portada, gestos y diseño están pendientes de comprobación en Windows.
+
 ## Cambios de apariencia y posición — 30/10/2026
 
 - Se redujo la opacidad de la superficie que cubre Glass y Mica, y se resaltó el tema seleccionado. Cuando Windows exige un material sólido se usa un fondo opaco.
