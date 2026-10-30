@@ -228,6 +228,8 @@
                             <ColumnDefinition Width="Auto" />
                             <ColumnDefinition Width="Auto" />
                             <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
 
                         <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="7" VerticalAlignment="Center">
@@ -288,6 +290,43 @@
                             <FontIcon
                                 FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets"
                                 Glyph="&#xE70E;"
+                                FontSize="10" />
+                        </Button>
+
+                        <!-- Ocultar por completo la isla (se restaura con Alt+Shift+I o abriendo de nuevo la app) -->
+                        <Button
+                            Grid.Column="4"
+                            Style="{StaticResource IconCircleButtonStyle}"
+                            Width="24"
+                            Height="24"
+                            CornerRadius="12"
+                            TabIndex="17"
+                            ToolTipService.ToolTip="Ocultar isla (Alt+Shift+I para volver a mostrarla)"
+                            AutomationProperties.Name="Ocultar isla"
+                            Command="{x:Bind ViewModel.HideIslandCommand}">
+                            <FontIcon
+                                FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets"
+                                Glyph="&#xED1A;"
+                                FontSize="10" />
+                        </Button>
+
+                        <!-- Cerrar por completo la aplicación -->
+                        <Button
+                            Grid.Column="5"
+                            Style="{StaticResource IconCircleButtonStyle}"
+                            Width="24"
+                            Height="24"
+                            CornerRadius="12"
+                            Background="#33F87171"
+                            BorderBrush="#66F87171"
+                            Foreground="#FFFCA5A5"
+                            TabIndex="18"
+                            ToolTipService.ToolTip="Cerrar Isla Dinámica por completo"
+                            AutomationProperties.Name="Cerrar aplicación"
+                            Command="{x:Bind ViewModel.ExitApplicationCommand}">
+                            <FontIcon
+                                FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets"
+                                Glyph="&#xE7E8;"
                                 FontSize="10" />
                         </Button>
                     </Grid>

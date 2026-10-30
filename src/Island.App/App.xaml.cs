@@ -33,6 +33,12 @@ public partial class App : Microsoft.UI.Xaml.Application
     private Microsoft.UI.Dispatching.DispatcherQueueTimer? _cursorMonitorTimer;
     private Microsoft.UI.Dispatching.DispatcherQueueTimer? _resizeAnimationTimer;
     private Microsoft.UI.Dispatching.DispatcherQueueTimer? _notificationDiffTimer;
+    private Microsoft.UI.Dispatching.DispatcherQueueTimer? _fullScreenMonitorTimer;
+
+    private bool _hiddenByFullScreen;
+    private bool _hiddenByUser;
+    private bool _wasToggleChordDown;
+    private bool _isExiting;
 
     private double _animCurrentWidthDip;
     private double _animCurrentHeightDip;
@@ -276,8 +282,9 @@ public partial class App : Microsoft.UI.Xaml.Application
             _cursorMonitorTimer.Interval = TimeSpan.FromMilliseconds(40);
             _cursorMonitorTimer.Tick += (_, _) =>
             {
-                if (_window is null || resilienceMonitor.IsSuspended)
+                if (_window is null || resilienceMonitor.IsSuspended || _windowController?.IsSuppressed == true)
                 {
+                    wasLeftMouseDown = WindowsDisplayAndWindowProber.IsLeftMouseButtonPressed();
                     return;
                 }
 
@@ -298,7 +305,8 @@ public partial class App : Microsoft.UI.Xaml.Application
                     return;
                 }
 
-                if (coordinator.CurrentState.Visibility != IslandVisibility.Compact)
+                // En Nivel 3 (abierto por el usuario) el hover no cambia nada: solo se cierra con clic fuera.
+                if (viewModel.IsExpandedMode)
                 {
                     return;
                 }
@@ -319,6 +327,96 @@ public partial class App : Microsoft.UI.Xaml.Application
                 }
             };
             _cursorMonitorTimer.Start();
+
+            // Ocultación total automática durante juegos / vídeos / apps a pantalla completa,
+            // ocultación manual (botón "Ocultar" o Alt+Shift+I) y cierre completo de la aplicación.
+            void ReevaluateSuppression(string reason)
+            {
+                if (_windowController is null || _isExiting)
+                {
+                    return;
+                }
+
+                bool shouldSuppress = _hiddenByUser || _hiddenByFullScreen;
+                if (shouldSuppress == _windowController.IsSuppressed)
+                {
+                    return;
+                }
+
+                if (shouldSuppress)
+                {
+                    viewModel.CollapseFromOutsideClick();
+                    viewModel.SetCursorHover(false);
+                }
+
+                _windowController.SetSuppressed(shouldSuppress);
+                logger.Log(
+                    DiagnosticLogLevel.Info,
+                    "Windowing",
+                    shouldSuppress ? "ISLAND_SUPPRESSED" : "ISLAND_RESTORED",
+                    $"Motivo={reason}, OcultaPorUsuario={_hiddenByUser}, OcultaPorPantallaCompleta={_hiddenByFullScreen}");
+
+                if (!shouldSuppress)
+                {
+                    _resizeAnimationTimer?.Stop();
+                    _animCurrentWidthDip = viewModel.PillWidthDip;
+                    _animCurrentHeightDip = viewModel.PillHeightDip;
+                    _animTargetWidthDip = viewModel.PillWidthDip;
+                    _animTargetHeightDip = viewModel.PillHeightDip;
+                    ApplyWindowSize(_animCurrentWidthDip, _animCurrentHeightDip);
+                }
+            }
+
+            viewModel.HideRequested += (_, _) =>
+            {
+                _hiddenByUser = true;
+                ReevaluateSuppression("BOTON_OCULTAR");
+            };
+
+            viewModel.ExitRequested += (_, _) => ExitApplicationCompletely(logger);
+
+            _fullScreenMonitorTimer = _window.DispatcherQueue.CreateTimer();
+            _fullScreenMonitorTimer.Interval = TimeSpan.FromMilliseconds(120);
+            int fullScreenProbeDivider = 0;
+            _fullScreenMonitorTimer.Tick += (_, _) =>
+            {
+                if (_isExiting)
+                {
+                    return;
+                }
+
+                // Alt+Shift+I: alterna mostrar/ocultar manualmente (detección de flanco para no rebotar).
+                bool chordDown = WindowsDisplayAndWindowProber.IsToggleVisibilityChordPressed();
+                if (chordDown && !_wasToggleChordDown)
+                {
+                    _hiddenByUser = !_hiddenByUser;
+                    ReevaluateSuppression("ATAJO_ALT_SHIFT_I");
+                }
+
+                _wasToggleChordDown = chordDown;
+
+                // La detección de pantalla completa se evalúa cada ~480 ms (4 ticks) para un coste mínimo.
+                if (++fullScreenProbeDivider < 4)
+                {
+                    return;
+                }
+
+                fullScreenProbeDivider = 0;
+                var quns = displayProber.CaptureFullScreenState();
+                bool foregroundFullScreen = WindowsDisplayAndWindowProber.IsForegroundWindowFullScreenOnIslandMonitor(
+                    hwnd,
+                    out string fgClass);
+                bool isFullScreenNow = foregroundFullScreen || quns.ShouldPauseAutomaticExpansions;
+
+                if (isFullScreenNow != _hiddenByFullScreen)
+                {
+                    _hiddenByFullScreen = isFullScreenNow;
+                    ReevaluateSuppression(isFullScreenNow
+                        ? $"PANTALLA_COMPLETA (Clase={fgClass}, QUNS={quns.NotificationStateName})"
+                        : "FIN_PANTALLA_COMPLETA");
+                }
+            };
+            _fullScreenMonitorTimer.Start();
         }
 
         if (isInteractiveDesktopRun)
@@ -420,6 +518,43 @@ public partial class App : Microsoft.UI.Xaml.Application
             _windowController.Dispose();
             _window.Close();
         }
+    }
+
+    private async void ExitApplicationCompletely(IDiagnosticLogger logger)
+    {
+        if (_isExiting)
+        {
+            return;
+        }
+
+        _isExiting = true;
+        logger.Log(DiagnosticLogLevel.Info, "Lifecycle", "USER_EXIT_REQUESTED", "El usuario cerró la Isla Dinámica por completo.");
+
+        _cursorMonitorTimer?.Stop();
+        _resizeAnimationTimer?.Stop();
+        _notificationDiffTimer?.Stop();
+        _fullScreenMonitorTimer?.Stop();
+        _windowController?.SetSuppressed(true);
+
+        try
+        {
+            if (_notificationMonitor is not null)
+            {
+                await _notificationMonitor.DisposeAsync();
+            }
+
+            if (_mediaProvider is not null)
+            {
+                await _mediaProvider.DisposeAsync();
+            }
+        }
+        catch (Exception)
+        {
+        }
+
+        _windowController?.Dispose();
+        _window?.Close();
+        Exit();
     }
 
     private static void ApplyEffectiveSystemBackdrop(Window window, EffectiveMaterialKind effectiveMaterial)

@@ -190,3 +190,21 @@
   - Repositorio remoto vinculado con éxito: [`https://github.com/OsviTap/Island-windows.git`](https://github.com/OsviTap/Island-windows.git).
   - Push completado exitosamente en rama `main` rastreando `origin/main`.
 
+---
+
+## Entrada 12 — Cierre Total, Ocultación Automática en Juegos/Pantalla Completa y Corrección de los 3 Estados (30/10/2026)
+
+- **Cierre por completo de la aplicación:**
+  - Se agregó un botón rojo de apagado/cierre en la barra superior de la vista expandida ([`MainWindow.xaml`](file:///d:/Proyectos/Widget%20windows/src/Island.App/MainWindow.xaml)).
+  - Implementación de [`ExitApplicationCompletely`](file:///d:/Proyectos/Widget%20windows/src/Island.App/App.xaml.cs) que detiene todos los `DispatcherQueueTimer` (`_cursorMonitorTimer`, `_resizeAnimationTimer`, `_notificationDiffTimer`, `_fullScreenMonitorTimer`), libera recursos de GSMTC y notificaciones, cierra la ventana y finaliza el proceso de forma limpia.
+- **Ocultación total en juegos y aplicaciones a pantalla completa:**
+  - Nueva función nativa [`WindowsDisplayAndWindowProber.IsForegroundWindowFullScreenOnIslandMonitor`](file:///d:/Proyectos/Widget%20windows/src/Island.Windows/Windowing/WindowsDisplayAndWindowProber.cs) que detecta si la aplicación en primer plano cubre todo el monitor (juegos en modo pantalla completa exclusiva o ventana sin bordes, vídeos a pantalla completa, F11), distinguiéndola del escritorio de Windows y Wallpaper Engine.
+  - Al detectar pantalla completa o cuando el usuario pulsa el nuevo botón "Ocultar" / atajo global `Alt+Shift+I`, la isla se oculta por completo (`SW_HIDE` con `IsSuppressed = true` en [`IslandWindowController.cs`](file:///d:/Proyectos/Widget%20windows/src/Island.Windows/Windowing/IslandWindowController.cs)) para que no estorbe durante partidas ni consuma GPU.
+  - Al salir del juego o pulsar de nuevo `Alt+Shift+I`, la isla se restaura automáticamente en su posición y tamaño correctos.
+- **Diferenciación estricta de las 3 fases:**
+  - **Nivel 1 (Reposo - Cápsula cerrada):** `128 x 28 DIPs` cuando no hay actividad de ratón ni eventos transitorios.
+  - **Nivel 2 (Compacto - Vista previa con marquesina):** `260 x 40 DIPs` al pasar el cursor por encima (*hover*) o ante eventos transitorios automáticos (cambio de canción o aviso entrante).
+  - **Nivel 3 (Expandido - Centro de control):** `420 x 214 DIPs` **únicamente** cuando el usuario hace clic directo en la píldora. Se repliega automáticamente al hacer clic en cualquier lugar fuera de la isla (salvo si está fijada).
+- **Publicación:** Compilado y publicado en [`d:\Proyectos\Widget windows\IslaDinamica_v4\`](file:///d:/Proyectos/Widget%20windows/IslaDinamica_v4/Island.App.exe) y sincronizado en [`d:\Proyectos\Widget windows\AppListaParaUsar\`](file:///d:/Proyectos/Widget%20windows/AppListaParaUsar/Island.App.exe).
+
+

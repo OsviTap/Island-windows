@@ -43,6 +43,30 @@ public sealed class IslandWindowController : IDisposable
     public IslandComputedGeometry? LastAppliedGeometry => _lastAppliedGeometry;
     public bool IsRecoveryHotKeyRegistered => _hotKeyRegistered;
 
+    /// <summary>
+    /// Indica si la isla está suprimida (oculta por completo) por pantalla completa o por petición del usuario.
+    /// Mientras esté suprimida, ApplyLayoutAndRegion calcula la geometría pero nunca vuelve a mostrar la ventana.
+    /// </summary>
+    public bool IsSuppressed { get; private set; }
+
+    /// <summary>
+    /// Oculta (SW_HIDE) o permite mostrar de nuevo la ventana de la isla.
+    /// Al levantar la supresión, el llamador debe volver a aplicar el layout para reposicionar y mostrar la ventana.
+    /// </summary>
+    public void SetSuppressed(bool suppressed)
+    {
+        if (IsSuppressed == suppressed)
+        {
+            return;
+        }
+
+        IsSuppressed = suppressed;
+        if (suppressed && _hwnd != 0)
+        {
+            ShowWindow(_hwnd, SwHide);
+        }
+    }
+
     private bool _hotKeyBoundToHwnd;
 
     public bool TryRegisterRecoveryHotKey()
@@ -129,6 +153,12 @@ public sealed class IslandWindowController : IDisposable
 
         if (_hwnd == 0)
         {
+            return geometry;
+        }
+
+        if (IsSuppressed)
+        {
+            ShowWindow(_hwnd, SwHide);
             return geometry;
         }
 

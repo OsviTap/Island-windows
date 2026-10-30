@@ -12,6 +12,9 @@ namespace Island.Windows.Windowing;
 public sealed class WindowsDisplayAndWindowProber
 {
     public const int GwlExStyle = -20;
+    public const int GwlStyle = -16;
+    private const long WsCaption = 0x00C00000;
+    private const uint MonitorDefaultToNearest = 0x00000002;
     public const nint WsExTopMost = 0x00000008;
     public const nint WsExToolWindow = 0x00000080;
     public const nint WsExLayered = 0x00080000;
@@ -256,6 +259,94 @@ public sealed class WindowsDisplayAndWindowProber
         (GetAsyncKeyState(0x01) & 0x8000) != 0;
 
     /// <summary>
+    /// Devuelve true si la combinación global Alt+Shift+I está pulsada en este instante.
+    /// Se consulta por sondeo para no depender de WM_HOTKEY (WinUI 3 no expone el bucle de mensajes).
+    /// </summary>
+    public static bool IsToggleVisibilityChordPressed() =>
+        (GetAsyncKeyState(0x12) & 0x8000) != 0 &&   // VK_MENU (Alt)
+        (GetAsyncKeyState(0x10) & 0x8000) != 0 &&   // VK_SHIFT
+        (GetAsyncKeyState(0x49) & 0x8000) != 0;     // 'I'
+
+    // Clases de ventana del propio shell de Windows que nunca deben considerarse "aplicación a pantalla completa"
+    // (escritorio, fondo de Wallpaper Engine incrustado en WorkerW, barra de tareas, menú Inicio, Alt+Tab, etc.).
+    private static readonly HashSet<string> ShellWindowClasses = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "Progman",
+        "WorkerW",
+        "Shell_TrayWnd",
+        "Shell_SecondaryTrayWnd",
+        "Windows.UI.Core.CoreWindow",
+        "XamlExplorerHostIslandWindow",
+        "TopLevelWindowForOverflowXamlIsland",
+        "MultitaskingViewFrame",
+        "ForegroundStaging",
+        "NotifyIconOverflowWindow"
+    };
+
+    /// <summary>
+    /// Detecta si la ventana en primer plano ocupa el monitor completo donde está la isla
+    /// (juegos en pantalla completa exclusiva o "ventana sin bordes", vídeos a pantalla completa, F11 del navegador).
+    /// Ignora el escritorio/Wallpaper Engine, la barra de tareas y ventanas simplemente maximizadas con barra de título.
+    /// </summary>
+    public static bool IsForegroundWindowFullScreenOnIslandMonitor(nint islandHwnd, out string foregroundClassName)
+    {
+        foregroundClassName = string.Empty;
+        nint fg = GetForegroundWindow();
+        if (fg == 0 || fg == islandHwnd || (islandHwnd != 0 && IsChild(islandHwnd, fg)))
+        {
+            return false;
+        }
+
+        foregroundClassName = GetWindowClassNameSafe(fg);
+        if (ShellWindowClasses.Contains(foregroundClassName))
+        {
+            return false;
+        }
+
+        if (!GetWindowRect(fg, out var rc))
+        {
+            return false;
+        }
+
+        nint fgMonitor = MonitorFromWindow(fg, MonitorDefaultToNearest);
+        if (fgMonitor == 0)
+        {
+            return false;
+        }
+
+        if (islandHwnd != 0)
+        {
+            nint islandMonitor = MonitorFromWindow(islandHwnd, MonitorDefaultToNearest);
+            if (islandMonitor != 0 && islandMonitor != fgMonitor)
+            {
+                return false;
+            }
+        }
+
+        var info = new MonitorInfoEx { cbSize = Marshal.SizeOf<MonitorInfoEx>() };
+        if (!GetMonitorInfoW(fgMonitor, ref info))
+        {
+            return false;
+        }
+
+        bool coversMonitor =
+            rc.Left <= info.rcMonitor.Left &&
+            rc.Top <= info.rcMonitor.Top &&
+            rc.Right >= info.rcMonitor.Right &&
+            rc.Bottom >= info.rcMonitor.Bottom;
+
+        if (!coversMonitor)
+        {
+            return false;
+        }
+
+        // Una ventana maximizada con barra de título (ej. con barra de tareas oculta automáticamente) no es pantalla completa.
+        long style = (long)GetWindowLongPtrW(fg, GwlStyle);
+        bool hasCaption = (style & WsCaption) == WsCaption;
+        return !(hasCaption && IsZoomed(fg));
+    }
+
+    /// <summary>
     /// Ejecuta una prueba empírica real sobre una ventana de isla WinUI/Win32 (islandHwnd) creando
     /// una ventana testigo detrás y comprobando con WindowFromPoint y GetForegroundWindow:
     /// 1. Que mostrar/posicionar la isla en modo pasivo no roba el foco.
@@ -497,6 +588,12 @@ public sealed class WindowsDisplayAndWindowProber
 
     [DllImport("user32.dll", ExactSpelling = true)]
     private static extern bool IsChild(nint hWndParent, nint hWnd);
+
+    [DllImport("user32.dll", ExactSpelling = true)]
+    private static extern nint MonitorFromWindow(nint hwnd, uint dwFlags);
+
+    [DllImport("user32.dll", ExactSpelling = true)]
+    private static extern bool IsZoomed(nint hWnd);
 
     [DllImport("user32.dll", CharSet = CharSet.Unicode, ExactSpelling = true)]
     private static extern nint CreateWindowExW(

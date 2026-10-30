@@ -31,6 +31,12 @@ public sealed partial class MainViewModel : ObservableObject
 
     public event EventHandler? LayoutOrThemeUpdated;
 
+    /// <summary>El usuario pidió ocultar la isla temporalmente (se restaura con Alt+Shift+I).</summary>
+    public event EventHandler? HideRequested;
+
+    /// <summary>El usuario pidió cerrar por completo la aplicación.</summary>
+    public event EventHandler? ExitRequested;
+
     [ObservableProperty]
     public partial string VisibilityText { get; set; } = string.Empty;
 
@@ -223,8 +229,9 @@ public sealed partial class MainViewModel : ObservableObject
     [RelayCommand]
     private void ToggleExpanded()
     {
-        var current = _coordinator.CurrentState;
-        if (current.Visibility == IslandVisibility.Expanded)
+        // Nivel 3 solo existe cuando el usuario lo abrió (interacción activa o fijada).
+        // Las expansiones automáticas (cambio de canción / aviso) se muestran como Nivel 2.
+        if (IsExpandedMode)
         {
             IsHoverPreviewMode = false;
             _coordinator.SetUserInteraction(IslandInteractionState.Passive);
@@ -233,6 +240,24 @@ public sealed partial class MainViewModel : ObservableObject
         {
             _coordinator.SetUserInteraction(IslandInteractionState.ActiveInUse);
         }
+    }
+
+    [RelayCommand]
+    private void HideIsland()
+    {
+        IsHoverPreviewMode = false;
+        if (_coordinator.CurrentState.Interaction != IslandInteractionState.Passive)
+        {
+            _coordinator.SetUserInteraction(IslandInteractionState.Passive);
+        }
+
+        HideRequested?.Invoke(this, EventArgs.Empty);
+    }
+
+    [RelayCommand]
+    private void ExitApplication()
+    {
+        ExitRequested?.Invoke(this, EventArgs.Empty);
     }
 
     public void SetCursorHover(bool isCursorInside)
@@ -249,7 +274,7 @@ public sealed partial class MainViewModel : ObservableObject
     public void CollapseFromOutsideClick()
     {
         var current = _coordinator.CurrentState;
-        if (current.Visibility == IslandVisibility.Expanded && current.Interaction != IslandInteractionState.PinnedOpen)
+        if (IsExpandedMode && current.Interaction != IslandInteractionState.PinnedOpen)
         {
             IsHoverPreviewMode = false;
             _coordinator.SetUserInteraction(IslandInteractionState.Passive);
@@ -469,9 +494,18 @@ public sealed partial class MainViewModel : ObservableObject
             _ => state.Policy.ToString()
         };
 
-        IsExpandedMode = state.Visibility == IslandVisibility.Expanded;
-        IsCompactMode = !IsExpandedMode && IsHoverPreviewMode;
-        IsMiniClosedMode = !IsExpandedMode && !IsHoverPreviewMode;
+        // Mapeo explícito a los 3 niveles de la Dynamic Island:
+        //  - Nivel 3 (Expandido): solo cuando el usuario lo abrió con clic (ActiveInUse / PinnedOpen).
+        //  - Nivel 2 (Compacto): cursor encima, o expansión automática transitoria (cambio de canción / aviso).
+        //  - Nivel 1 (Cápsula mínima): en reposo.
+        bool isUserExpanded = state.Visibility == IslandVisibility.Expanded &&
+                              state.Interaction != IslandInteractionState.Passive;
+        bool isTransientPreview = state.Visibility == IslandVisibility.Expanded &&
+                                  state.Interaction == IslandInteractionState.Passive;
+
+        IsExpandedMode = isUserExpanded;
+        IsCompactMode = !IsExpandedMode && (IsHoverPreviewMode || isTransientPreview);
+        IsMiniClosedMode = !IsExpandedMode && !IsCompactMode;
 
         IsPinned = state.Interaction == IslandInteractionState.PinnedOpen;
         PinButtonText = IsPinned ? "Fijada" : "Fijar";
@@ -570,12 +604,13 @@ public sealed partial class MainViewModel : ObservableObject
 
     private void UpdatePillDimensions(IslandVisibility visibility, ThemeDefinition theme)
     {
-        if (visibility == IslandVisibility.Expanded)
+        _ = visibility;
+        if (IsExpandedMode)
         {
             PillWidthDip = theme.ExpandedWidth;
             PillHeightDip = theme.ExpandedHeight;
         }
-        else if (IsHoverPreviewMode)
+        else if (IsCompactMode)
         {
             PillWidthDip = theme.CompactWidth;
             PillHeightDip = theme.CompactHeight;
