@@ -36,7 +36,10 @@ public static class IslandLayoutCalculator
         IslandVisibility visibility,
         ThemeDefinition theme,
         double anchorHorizontalRatio = 0.5,
-        double anchorTopOffsetDip = 12.0)
+        double anchorTopOffsetDip = 12.0,
+        double? anchorVerticalRatio = null,
+        double? widthOverrideDip = null,
+        double? heightOverrideDip = null)
     {
         ArgumentNullException.ThrowIfNull(theme);
 
@@ -87,6 +90,9 @@ public static class IslandLayoutCalculator
         double pillHeightDip = visibility == IslandVisibility.Expanded
             ? Math.Clamp(theme.ExpandedHeight * densityMultiplier, ThemeGeometryLimits.MinExpandedHeight, ThemeGeometryLimits.MaxExpandedHeight)
             : Math.Clamp(theme.CompactHeight * densityMultiplier, ThemeGeometryLimits.MinCompactHeight, ThemeGeometryLimits.MaxCompactHeight);
+
+        pillWidthDip = widthOverrideDip ?? pillWidthDip;
+        pillHeightDip = heightOverrideDip ?? pillHeightDip;
 
         double maxContainerWidthDip = Math.Max(pillWidthDip, ThemeGeometryLimits.MaxExpandedWidth) + (ContainerMarginDip * 2.0);
         double maxContainerHeightDip = Math.Max(pillHeightDip, ThemeGeometryLimits.MaxExpandedHeight) + (ContainerMarginDip * 2.0);
@@ -142,6 +148,18 @@ public static class IslandLayoutCalculator
             containerScreenBounds.Y + pillRelativeBounds.Y,
             pillRelativeBounds.Width,
             pillRelativeBounds.Height);
+
+        if (anchorVerticalRatio is double vertical && double.IsFinite(vertical))
+        {
+            // Anchor describes the center of the resting capsule. On the lower half,
+            // the larger panel grows upward; elsewhere it grows downward.
+            int anchorY = workArea.Y + (int)Math.Round(workArea.Height * Math.Clamp(vertical, 0, 1));
+            int restingHalfHeight = (int)Math.Round(14 * scaleFactor);
+            int x = Math.Clamp(anchorCenterX - pillWidthPx / 2, workArea.X, Math.Max(workArea.X, workArea.Right - pillWidthPx));
+            int y = vertical > 0.5 ? anchorY + restingHalfHeight - pillHeightPx : anchorY - restingHalfHeight;
+            y = Math.Clamp(y, workArea.Y, Math.Max(workArea.Y, workArea.Bottom - pillHeightPx));
+            pillScreenBounds = new ScreenRectPx(x, y, pillWidthPx, pillHeightPx);
+        }
 
         return new IslandComputedGeometry(
             TargetMonitorDeviceName: targetMonitor.DeviceName,

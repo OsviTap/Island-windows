@@ -167,6 +167,7 @@ public partial class App : Microsoft.UI.Xaml.Application
 
         nint hwnd = WinRT.Interop.WindowNative.GetWindowHandle(_window);
         var displayProber = new WindowsDisplayAndWindowProber(logger);
+        _window.ConfigureDragging(displayProber);
         _windowController = new IslandWindowController(hwnd, displayProber, logger);
         _windowController.TryRegisterRecoveryHotKey();
 
@@ -187,7 +188,8 @@ public partial class App : Microsoft.UI.Xaml.Application
                 viewModel.CurrentSettings.AnchorHorizontalRatio,
                 viewModel.CurrentSettings.AnchorTopOffsetDip,
                 widthDip,
-                heightDip);
+                heightDip,
+                viewModel.CurrentSettings.AnchorVerticalRatio);
         }
 
         // Animación de tamaño con suavizado exponencial (~60 FPS) para que la isla "crezca" y "se encoja"
@@ -273,7 +275,8 @@ public partial class App : Microsoft.UI.Xaml.Application
             viewModel.CurrentSettings.AnchorHorizontalRatio,
             viewModel.CurrentSettings.AnchorTopOffsetDip,
             viewModel.PillWidthDip,
-            viewModel.PillHeightDip);
+            viewModel.PillHeightDip,
+            viewModel.CurrentSettings.AnchorVerticalRatio);
 
         if (isInteractiveDesktopRun && _window.DispatcherQueue is not null)
         {
@@ -282,7 +285,7 @@ public partial class App : Microsoft.UI.Xaml.Application
             _cursorMonitorTimer.Interval = TimeSpan.FromMilliseconds(40);
             _cursorMonitorTimer.Tick += (_, _) =>
             {
-                if (_window is null || resilienceMonitor.IsSuspended || _windowController?.IsSuppressed == true)
+                if (_window is null || _window.IsDragging || resilienceMonitor.IsSuspended || _windowController?.IsSuppressed == true)
                 {
                     wasLeftMouseDown = WindowsDisplayAndWindowProber.IsLeftMouseButtonPressed();
                     return;

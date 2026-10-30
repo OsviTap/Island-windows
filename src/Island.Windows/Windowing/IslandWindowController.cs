@@ -109,7 +109,8 @@ public sealed class IslandWindowController : IDisposable
         double anchorHorizontalRatio,
         double anchorTopOffsetDip,
         double? customWidthDipOverride = null,
-        double? customHeightDipOverride = null)
+        double? customHeightDipOverride = null,
+        double? anchorVerticalRatio = null)
     {
         var effectiveTheme = theme;
         if (customWidthDipOverride.HasValue || customHeightDipOverride.HasValue)
@@ -128,9 +129,12 @@ public sealed class IslandWindowController : IDisposable
             state.Visibility,
             effectiveTheme,
             anchorHorizontalRatio,
-            anchorTopOffsetDip);
+            anchorTopOffsetDip,
+            anchorVerticalRatio,
+            customWidthDipOverride,
+            customHeightDipOverride);
 
-        if (state.Visibility != IslandVisibility.Hidden &&
+        if (anchorVerticalRatio is null && state.Visibility != IslandVisibility.Hidden &&
             (customWidthDipOverride is > 0 || customHeightDipOverride is > 0))
         {
             double wDip = customWidthDipOverride ?? geometry.PillWidthDip;

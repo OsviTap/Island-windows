@@ -144,7 +144,8 @@ public static class BuiltInThemes
         RequestedMaterial = MaterialKind.Glass,
         Colors = DefaultSolid.Colors with
         {
-            BackgroundHex = "#4D0E1015",
+            // Let the native acrylic backdrop show through the XAML surface.
+            BackgroundHex = "#100E1015",
             BorderHex = "#3DFFFFFF"
         }
     };
@@ -156,7 +157,7 @@ public static class BuiltInThemes
         RequestedMaterial = MaterialKind.Mica,
         Colors = DefaultSolid.Colors with
         {
-            BackgroundHex = "#5913151B",
+            BackgroundHex = "#1813151B",
             BorderHex = "#33FFFFFF",
             AccentHex = "#FF60A5FA"
         }

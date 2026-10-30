@@ -1,5 +1,11 @@
 # 00. Bitácora General del Proyecto — Isla Flotante para Windows 11
 
+## Cambios de apariencia y posición — 30/10/2026
+
+- Se redujo la opacidad de la superficie que cubre Glass y Mica, y se resaltó el tema seleccionado. Cuando Windows exige un material sólido se usa un fondo opaco.
+- Desde el panel abierto se puede arrastrar el encabezado para cambiar la posición. La configuración guarda monitor y posición vertical; al expandirse cerca del borde inferior, el panel crece hacia arriba. El botón Centrar restaura la posición inicial.
+- Se añadieron casos de geometría para posiciones altas y bajas. Estos cambios se prepararon en Linux sin SDK .NET: compilación, pruebas, apariencia real del material, arrastre, escalas y multimonitor quedan pendientes de validación en Windows.
+
 **Proyecto:** `Island.sln` (`d:\Proyectos\Widget windows`)  
 **Objetivo:** Construcción paso a paso de un widget de escritorio tipo isla flotante para Windows 11 con control multimedia (`GSMTC` / `CoreAudio`), avisos filtrados (`UserNotificationListener`), temas declarativos JSON y bajo consumo comprobado.
 

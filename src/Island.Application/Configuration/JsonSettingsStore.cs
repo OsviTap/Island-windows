@@ -147,6 +147,12 @@ public sealed class JsonSettingsStore
             return false;
         }
 
+        if (document.AnchorVerticalRatio is double vertical && (!double.IsFinite(vertical) || vertical < 0 || vertical > 1))
+        {
+            errorCode = "ANCHOR_VERTICAL_RATIO_OUT_OF_RANGE";
+            return false;
+        }
+
         if (document.EnabledModules is null || document.AllowedNotificationAppIds is null)
         {
             errorCode = "NULL_COLLECTIONS";

@@ -9,6 +9,25 @@ namespace Island.Core.Tests;
 public sealed class Phase4LayoutAndThemesTests
 {
     [Theory]
+    [InlineData(0.1, 0.1)]
+    [InlineData(0.9, 0.9)]
+    public void FreeAnchor_KeepsBothSizesVisible_AndExpandsTowardTheInterior(double x, double y)
+    {
+        var monitor = new MonitorDisplayDescriptor("screen", true, new ScreenRectPx(-1920, 0, 1920, 1080),
+            new ScreenRectPx(-1920, 0, 1920, 1040), 96, 96, 100);
+        var compact = IslandLayoutCalculator.ComputeGeometry([monitor], "screen", IslandVisibility.Compact,
+            BuiltInThemes.DefaultGlass, x, 12, y, 128, 28);
+        var expanded = IslandLayoutCalculator.ComputeGeometry([monitor], "screen", IslandVisibility.Expanded,
+            BuiltInThemes.DefaultGlass, x, 12, y, 420, 214);
+        Assert.True(expanded.PillScreenBoundsPx.X >= monitor.WorkAreaPx.X);
+        Assert.True(expanded.PillScreenBoundsPx.Right <= monitor.WorkAreaPx.Right);
+        Assert.True(expanded.PillScreenBoundsPx.Y >= monitor.WorkAreaPx.Y);
+        Assert.True(expanded.PillScreenBoundsPx.Bottom <= monitor.WorkAreaPx.Bottom);
+        if (y > 0.5) Assert.Equal(compact.PillScreenBoundsPx.Bottom, expanded.PillScreenBoundsPx.Bottom);
+        else Assert.Equal(compact.PillScreenBoundsPx.Y, expanded.PillScreenBoundsPx.Y);
+    }
+
+    [Theory]
     [InlineData(96, 100, 1.0)]
     [InlineData(120, 125, 1.25)]
     [InlineData(144, 150, 1.5)]

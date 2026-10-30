@@ -1,5 +1,7 @@
 using System.Globalization;
 using Island.App.ViewModels;
+using Island.Windows.Windowing;
+using Island.Core.Contracts;
 using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Input;
@@ -21,6 +23,14 @@ public sealed partial class MainWindow : Window
     private int _expandedPauseTicks = 30;
     private string _lastWatchedHeadline = string.Empty;
     private string _lastWatchedMediaTitle = string.Empty;
+    private WindowsDisplayAndWindowProber? _displayProber;
+    private (int X, int Y)? _dragStart;
+    private ScreenRectPx? _dragBounds;
+    private bool _dragMoved;
+    private int _dragAnchorY;
+
+    public bool IsDragging => _dragStart.HasValue;
+    public void ConfigureDragging(WindowsDisplayAndWindowProber displayProber) => _displayProber = displayProber;
 
     public MainViewModel ViewModel { get; }
 
@@ -57,6 +67,13 @@ public sealed partial class MainWindow : Window
         NotificationHeadlineTextBlock.Foreground = fgBrush;
         CompactBadgeTextBlock.Foreground = accentBrush;
 
+        foreach (var (button, material) in new[] { (SolidThemeButton, "Solid"), (GlassThemeButton, "Glass"), (MicaThemeButton, "Mica") })
+        {
+            bool selected = ViewModel.RequestedMaterialText == material;
+            button.BorderBrush = selected ? accentBrush : new SolidColorBrush(Color.FromArgb(0x24, 0xFF, 0xFF, 0xFF));
+            button.BorderThickness = new Thickness(selected ? 2 : 1);
+        }
+
         if (!string.Equals(_lastWatchedHeadline, ViewModel.CompactHeadlineText, StringComparison.Ordinal))
         {
             _lastWatchedHeadline = ViewModel.CompactHeadlineText;
@@ -75,6 +92,52 @@ public sealed partial class MainWindow : Window
             ExpandedTitleTranslateTransform.X = 0;
         }
     }
+
+    private void OnDragPressed(object sender, PointerRoutedEventArgs e)
+    {
+        if (sender is not UIElement element || _displayProber is null || !e.GetCurrentPoint(element).Properties.IsLeftButtonPressed) return;
+        _dragStart = WindowsDisplayAndWindowProber.GetCursorScreenPosition();
+        _dragBounds = WindowsDisplayAndWindowProber.GetHwndScreenRect(WinRT.Interop.WindowNative.GetWindowHandle(this));
+        var originalMonitor = _displayProber.CaptureMonitors().FirstOrDefault(m => m.DeviceName == ViewModel.PreferredMonitorDeviceName)
+            ?? _displayProber.CaptureMonitors().FirstOrDefault(m => m.BoundsPx.Contains(_dragBounds.X + _dragBounds.Width / 2, _dragBounds.Y));
+        _dragAnchorY = originalMonitor is not null && ViewModel.CurrentSettings.AnchorVerticalRatio is double ratio
+            ? originalMonitor.WorkAreaPx.Y + (int)Math.Round(originalMonitor.WorkAreaPx.Height * ratio)
+            : _dragBounds.Y + (int)Math.Round(14.0 * (originalMonitor?.DpiY ?? 96) / 96.0);
+        _dragMoved = false;
+        if (_dragStart.HasValue) element.CapturePointer(e.Pointer);
+        e.Handled = true;
+    }
+
+    private void OnDragMoved(object sender, PointerRoutedEventArgs e)
+    {
+        if (_dragStart is not { } start || _dragBounds is null || _displayProber is null) return;
+        var cursor = WindowsDisplayAndWindowProber.GetCursorScreenPosition();
+        if (cursor is not { } point) return;
+        int dx = point.X - start.X, dy = point.Y - start.Y;
+        if (!_dragMoved && Math.Abs(dx) + Math.Abs(dy) < 6) return;
+        _dragMoved = true;
+        int centerX = _dragBounds.X + _dragBounds.Width / 2 + dx;
+        // Convert the expanded panel's edge back to the resting capsule anchor.
+        int anchorY = _dragAnchorY + dy;
+        var monitors = _displayProber.CaptureMonitors();
+        var monitor = monitors.FirstOrDefault(m => m.BoundsPx.Contains(point.X, point.Y)) ?? monitors.FirstOrDefault(m => m.IsPrimary);
+        if (monitor is null || monitor.WorkAreaPx.Width <= 0 || monitor.WorkAreaPx.Height <= 0) return;
+        ViewModel.MoveAnchor(monitor.DeviceName, (centerX - monitor.WorkAreaPx.X) / (double)monitor.WorkAreaPx.Width,
+            (anchorY - monitor.WorkAreaPx.Y) / (double)monitor.WorkAreaPx.Height, false);
+        e.Handled = true;
+    }
+
+    private void OnDragReleased(object sender, PointerRoutedEventArgs e)
+    {
+        if (_dragMoved && ViewModel.PreferredMonitorDeviceName is { } monitor && ViewModel.CurrentSettings.AnchorVerticalRatio is double vertical)
+            ViewModel.MoveAnchor(monitor, ViewModel.CurrentSettings.AnchorHorizontalRatio, vertical, true);
+        _dragStart = null;
+        _dragBounds = null;
+        if (sender is UIElement element) element.ReleasePointerCapture(e.Pointer);
+        e.Handled = true;
+    }
+
+    private void OnDragCaptureLost(object sender, PointerRoutedEventArgs e) => OnDragReleased(sender, e);
 
     private void OnPillPointerEntered(object sender, PointerRoutedEventArgs e)
     {

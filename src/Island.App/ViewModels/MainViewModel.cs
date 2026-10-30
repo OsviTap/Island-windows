@@ -166,6 +166,7 @@ public sealed partial class MainViewModel : ObservableObject
         _settingsStore = settingsStore ?? throw new ArgumentNullException(nameof(settingsStore));
         _themeCatalog = themeCatalog ?? throw new ArgumentNullException(nameof(themeCatalog));
         _currentSettings = initialSettings ?? AppSettingsDocument.CreateDefault();
+        PreferredMonitorDeviceName = _currentSettings.AnchorMonitorDeviceName;
         _mediaProvider = mediaProvider;
         _audioInspector = audioInspector;
 
@@ -345,10 +346,25 @@ public sealed partial class MainViewModel : ObservableObject
         _currentSettings = _currentSettings with
         {
             AnchorHorizontalRatio = 0.5,
-            AnchorTopOffsetDip = 12.0
+            AnchorTopOffsetDip = 12.0,
+            AnchorVerticalRatio = null,
+            AnchorMonitorDeviceName = null
         };
         TrySaveSettings();
         _coordinator.SetUserInteraction(IslandInteractionState.ActiveInUse);
+        LayoutOrThemeUpdated?.Invoke(this, EventArgs.Empty);
+    }
+
+    public void MoveAnchor(string monitor, double horizontal, double vertical, bool persist)
+    {
+        PreferredMonitorDeviceName = monitor;
+        _currentSettings = _currentSettings with
+        {
+            AnchorMonitorDeviceName = monitor,
+            AnchorHorizontalRatio = Math.Clamp(horizontal, 0.05, 0.95),
+            AnchorVerticalRatio = Math.Clamp(vertical, 0.0, 1.0)
+        };
+        if (persist) TrySaveSettings();
         LayoutOrThemeUpdated?.Invoke(this, EventArgs.Empty);
     }
 
@@ -591,7 +607,12 @@ public sealed partial class MainViewModel : ObservableObject
         }
         else
         {
-            ActiveBackgroundHex = colors.BackgroundHex;
+            // Un material sólido de respaldo necesita una superficie opaca aunque
+            // el tema solicitado haya definido un fondo translúcido.
+            ActiveBackgroundHex = themeState.EffectiveMaterial == EffectiveMaterialKind.Solid &&
+                                  themeState.RequestedMaterial != MaterialKind.Solid
+                ? BuiltInThemes.DefaultSolid.Colors.BackgroundHex
+                : colors.BackgroundHex;
             ActiveForegroundHex = colors.ForegroundHex;
             ActiveBorderHex = colors.BorderHex;
             ActiveAccentHex = colors.AccentHex;

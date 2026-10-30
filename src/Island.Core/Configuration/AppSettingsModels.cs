@@ -19,6 +19,10 @@ public sealed record AppSettingsDocument(
     IReadOnlyList<string> AllowedNotificationAppIds,
     bool DiagnosticsIncludePrivateContent)
 {
+    // Nullable fields preserve settings written before free positioning existed.
+    public double? AnchorVerticalRatio { get; init; }
+    public string? AnchorMonitorDeviceName { get; init; }
+
     public const int CurrentSchemaVersion = 1;
 
     public static AppSettingsDocument CreateDefault() => new(

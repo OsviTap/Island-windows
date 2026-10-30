@@ -232,7 +232,10 @@
                             <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
 
-                        <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="7" VerticalAlignment="Center">
+                        <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="7" VerticalAlignment="Center"
+                                    Background="Transparent" PointerPressed="OnDragPressed" PointerMoved="OnDragMoved"
+                                    PointerReleased="OnDragReleased" PointerCaptureLost="OnDragCaptureLost"
+                                    ToolTipService.ToolTip="Arrastra aquí para mover la isla">
                             <Border
                                 Width="8"
                                 Height="8"
@@ -591,18 +594,21 @@
 
                         <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
                             <Button
+                                x:Name="SolidThemeButton"
                                 Style="{StaticResource PillSubtleButtonStyle}"
                                 Content="Sólido"
                                 TabIndex="13"
                                 AutomationProperties.Name="Aplicar tema Sólido"
                                 Command="{x:Bind ViewModel.SwitchToSolidThemeCommand}" />
                             <Button
+                                x:Name="GlassThemeButton"
                                 Style="{StaticResource PillSubtleButtonStyle}"
                                 Content="Glass"
                                 TabIndex="14"
                                 AutomationProperties.Name="Aplicar tema Glass Acrylic"
                                 Command="{x:Bind ViewModel.SwitchToGlassThemeCommand}" />
                             <Button
+                                x:Name="MicaThemeButton"
                                 Style="{StaticResource PillSubtleButtonStyle}"
                                 Content="Mica"
                                 TabIndex="15"

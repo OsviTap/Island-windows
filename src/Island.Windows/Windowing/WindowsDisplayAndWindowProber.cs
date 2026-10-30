@@ -258,6 +258,9 @@ public sealed class WindowsDisplayAndWindowProber
     public static bool IsLeftMouseButtonPressed() =>
         (GetAsyncKeyState(0x01) & 0x8000) != 0;
 
+    public static (int X, int Y)? GetCursorScreenPosition() =>
+        GetCursorPos(out var point) ? (point.X, point.Y) : null;
+
     /// <summary>
     /// Devuelve true si la combinación global Alt+Shift+I está pulsada en este instante.
     /// Se consulta por sondeo para no depender de WM_HOTKEY (WinUI 3 no expone el bucle de mensajes).
