@@ -1,0 +1,32 @@
+# .NET build outputs
+bin/
+obj/
+out/
+publish/
+artifacts/
+
+# Local portable toolchain & NuGet cache for sandboxed builds
+.dotnet/
+.dotnet_home/
+.nuget/
+
+# Visual Studio / IDE files
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Local standalone outputs & published bundles
+AppListaParaUsar/
+IslaDinamica_v*/
+
+# MSIX local test certificates and package outputs
+*.pfx
+*.cer
+AppPackages/
+BundleArtifacts/
+
+# Local diagnostic logs
+logs/
+*.log

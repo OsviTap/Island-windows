@@ -1,0 +1,585 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Window
+    x:Class="Island.App.MainWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    Title="Island Widget">
+
+    <Grid
+        x:Name="RootOverlayGrid"
+        Background="Transparent"
+        RequestedTheme="Dark"
+        KeyDown="OnRootKeyDown">
+
+        <Grid.Resources>
+            <!-- Estilo limpio y sutil tipo píldora para botones de cabecera y pie -->
+            <Style x:Key="PillSubtleButtonStyle" TargetType="Button">
+                <Setter Property="Background" Value="#14FFFFFF" />
+                <Setter Property="Foreground" Value="#FFE4E4E7" />
+                <Setter Property="BorderBrush" Value="#24FFFFFF" />
+                <Setter Property="BorderThickness" Value="1" />
+                <Setter Property="CornerRadius" Value="10" />
+                <Setter Property="Padding" Value="9,3" />
+                <Setter Property="MinHeight" Value="24" />
+                <Setter Property="MinWidth" Value="0" />
+                <Setter Property="FontSize" Value="11" />
+                <Setter Property="FontWeight" Value="SemiBold" />
+                <Setter Property="VerticalAlignment" Value="Center" />
+            </Style>
+
+            <!-- Estilo circular para botones de icono (transporte multimedia, volumen, expandir/cerrar) -->
+            <Style x:Key="IconCircleButtonStyle" TargetType="Button">
+                <Setter Property="Background" Value="#18FFFFFF" />
+                <Setter Property="Foreground" Value="#FFF4F4F5" />
+                <Setter Property="BorderBrush" Value="#26FFFFFF" />
+                <Setter Property="BorderThickness" Value="1" />
+                <Setter Property="CornerRadius" Value="14" />
+                <Setter Property="Width" Value="28" />
+                <Setter Property="Height" Value="28" />
+                <Setter Property="Padding" Value="0" />
+                <Setter Property="MinHeight" Value="0" />
+                <Setter Property="MinWidth" Value="0" />
+                <Setter Property="HorizontalContentAlignment" Value="Center" />
+                <Setter Property="VerticalContentAlignment" Value="Center" />
+                <Setter Property="VerticalAlignment" Value="Center" />
+            </Style>
+
+            <!-- Estilo destacado con color de acento para el botón principal Play/Pause -->
+            <Style x:Key="AccentCircleButtonStyle" TargetType="Button">
+                <Setter Property="Background" Value="#3338BDF8" />
+                <Setter Property="Foreground" Value="#FF38BDF8" />
+                <Setter Property="BorderBrush" Value="#6638BDF8" />
+                <Setter Property="BorderThickness" Value="1" />
+                <Setter Property="CornerRadius" Value="16" />
+                <Setter Property="Width" Value="32" />
+                <Setter Property="Height" Value="32" />
+                <Setter Property="Padding" Value="0" />
+                <Setter Property="MinHeight" Value="0" />
+                <Setter Property="MinWidth" Value="0" />
+                <Setter Property="HorizontalContentAlignment" Value="Center" />
+                <Setter Property="VerticalContentAlignment" Value="Center" />
+                <Setter Property="VerticalAlignment" Value="Center" />
+            </Style>
+        </Grid.Resources>
+
+        <!-- Superficie principal de la Isla Dinámica sincronizada con el redondeo DWM nativo de Windows 11 -->
+        <Border
+            x:Name="IslandPillBorder"
+            HorizontalAlignment="Stretch"
+            VerticalAlignment="Stretch"
+            Margin="0"
+            Background="#4D0E1015"
+            BorderBrush="#3DFFFFFF"
+            BorderThickness="1"
+            CornerRadius="8"
+            Padding="10,4"
+            PointerEntered="OnPillPointerEntered"
+            PointerPressed="OnPillPointerPressed">
+
+            <Grid>
+                <!-- ========================================================================= -->
+                <!-- NIVEL 1: CÁPSULA CERRADA EN REPOSO (128 x 28 DIPs - Estilo iPhone Notch)  -->
+                <!-- Se abre automáticamente al Nivel 2 cuando acercas el cursor por encima    -->
+                <!-- ========================================================================= -->
+                <Grid
+                    x:Name="MiniClosedContentGrid"
+                    Visibility="{x:Bind ViewModel.IsMiniClosedMode, Mode=OneWay}"
+                    ColumnSpacing="8"
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Center">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+
+                    <!-- Punto luminoso de actividad -->
+                    <Border
+                        Grid.Column="0"
+                        Width="6"
+                        Height="6"
+                        CornerRadius="3"
+                        Background="#FF38BDF8"
+                        VerticalAlignment="Center" />
+
+                    <!-- Barra central minimalista tipo Dynamic Island -->
+                    <Border
+                        Grid.Column="1"
+                        Width="44"
+                        Height="4"
+                        CornerRadius="2"
+                        Background="#4DFFFFFF"
+                        VerticalAlignment="Center" />
+
+                    <!-- Micro-indicador de onda musical / estado -->
+                    <FontIcon
+                        Grid.Column="2"
+                        FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets"
+                        Glyph="&#xEC4F;"
+                        FontSize="10"
+                        Foreground="#FF38BDF8"
+                        VerticalAlignment="Center" />
+                </Grid>
+
+                <!-- ========================================================================= -->
+                <!-- NIVEL 2: PÍLDORA INTERMEDIA EN HOVER (260 x 40 DIPs)                      -->
+                <!-- Muestra ticker horizontal (marquee) y se expande al Nivel 3 con un clic   -->
+                <!-- ========================================================================= -->
+                <Grid
+                    x:Name="CompactContentGrid"
+                    Visibility="{x:Bind ViewModel.IsCompactMode, Mode=OneWay}"
+                    ColumnSpacing="10"
+                    VerticalAlignment="Center">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+
+                    <!-- Insignia de estado con punto luminoso e indicador -->
+                    <Border
+                        Grid.Column="0"
+                        Background="#2438BDF8"
+                        BorderBrush="#4D38BDF8"
+                        BorderThickness="1"
+                        CornerRadius="10"
+                        Padding="8,3"
+                        VerticalAlignment="Center">
+                        <StackPanel Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
+                            <Border
+                                Width="6"
+                                Height="6"
+                                CornerRadius="3"
+                                Background="#FF38BDF8"
+                                VerticalAlignment="Center" />
+                            <TextBlock
+                                x:Name="CompactBadgeTextBlock"
+                                Text="{x:Bind ViewModel.CompactBadgeText, Mode=OneWay}"
+                                FontSize="10"
+                                FontWeight="Bold"
+                                CharacterSpacing="30"
+                                Foreground="#FF38BDF8"
+                                VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Contenedor de desplazamiento horizontal continuo (Marquee) para título/artista -->
+                    <ScrollViewer
+                        x:Name="CompactMarqueeScrollViewer"
+                        Grid.Column="1"
+                        HorizontalScrollBarVisibility="Hidden"
+                        VerticalScrollBarVisibility="Disabled"
+                        HorizontalScrollMode="Disabled"
+                        VerticalScrollMode="Disabled"
+                        VerticalAlignment="Center">
+                        <TextBlock
+                            x:Name="CompactHeadlineTextBlock"
+                            Text="{x:Bind ViewModel.CompactHeadlineText, Mode=OneWay}"
+                            FontSize="12"
+                            FontWeight="SemiBold"
+                            Foreground="#FFF4F4F5"
+                            MaxLines="1"
+                            VerticalAlignment="Center">
+                            <TextBlock.RenderTransform>
+                                <TranslateTransform x:Name="CompactHeadlineTranslateTransform" X="0" />
+                            </TextBlock.RenderTransform>
+                        </TextBlock>
+                    </ScrollViewer>
+
+                    <!-- Botón circular limpio con chevron hacia abajo para desplegar la isla -->
+                    <Button
+                        Grid.Column="2"
+                        Style="{StaticResource IconCircleButtonStyle}"
+                        Width="24"
+                        Height="24"
+                        CornerRadius="12"
+                        TabIndex="1"
+                        ToolTipService.ToolTip="Clic para abrir el panel completo"
+                        AutomationProperties.Name="Expandir isla flotante"
+                        Command="{x:Bind ViewModel.ToggleExpandedCommand}">
+                        <FontIcon
+                            FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets"
+                            Glyph="&#xE70D;"
+                            FontSize="10" />
+                    </Button>
+                </Grid>
+
+                <!-- ========================================================================= -->
+                <!-- NIVEL 3: PANEL EXPANDIDO COMPLETO (420 x 214 DIPs)                        -->
+                <!-- Se contrae solo al hacer clic fuera de la isla o pulsar Escape            -->
+                <!-- ========================================================================= -->
+                <Grid
+                    x:Name="ExpandedContentGrid"
+                    Visibility="{x:Bind ViewModel.IsExpandedMode, Mode=OneWay}"
+                    RowSpacing="8"
+                    Padding="2,3"
+                    VerticalAlignment="Stretch">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+
+                    <!-- Fila 0: Barra Superior (Indicador de isla, Privacidad, Anclaje y Contraer) -->
+                    <Grid Grid.Row="0" ColumnSpacing="6" VerticalAlignment="Center">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+
+                        <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="7" VerticalAlignment="Center">
+                            <Border
+                                Width="8"
+                                Height="8"
+                                CornerRadius="4"
+                                Background="#FF38BDF8"
+                                VerticalAlignment="Center" />
+                            <TextBlock
+                                x:Name="ExpandedHeaderTextBlock"
+                                Text="{x:Bind ViewModel.HeaderMaterialLabel, Mode=OneWay}"
+                                FontSize="12"
+                                FontWeight="SemiBold"
+                                Foreground="#FFE4E4E7"
+                                TextTrimming="CharacterEllipsis"
+                                VerticalAlignment="Center" />
+                        </StackPanel>
+
+                        <Button
+                            Grid.Column="1"
+                            Style="{StaticResource PillSubtleButtonStyle}"
+                            Content="{x:Bind ViewModel.PolicyLabelText, Mode=OneWay}"
+                            TabIndex="2"
+                            ToolTipService.ToolTip="Alternar modo: Normal / Privado / Pausado"
+                            AutomationProperties.Name="Cambiar política de avisos y privacidad"
+                            Command="{x:Bind ViewModel.CyclePolicyCommand}" />
+
+                        <Button
+                            Grid.Column="2"
+                            Style="{StaticResource PillSubtleButtonStyle}"
+                            TabIndex="3"
+                            ToolTipService.ToolTip="Fijar abierta para que no se cierre al hacer clic fuera"
+                            AutomationProperties.Name="Anclar o desanclar isla abierta"
+                            Command="{x:Bind ViewModel.TogglePinCommand}">
+                            <StackPanel Orientation="Horizontal" Spacing="5">
+                                <FontIcon
+                                    FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets"
+                                    Glyph="{x:Bind ViewModel.PinGlyph, Mode=OneWay}"
+                                    FontSize="10" />
+                                <TextBlock
+                                    Text="{x:Bind ViewModel.PinButtonText, Mode=OneWay}"
+                                    FontSize="11"
+                                    FontWeight="SemiBold" />
+                            </StackPanel>
+                        </Button>
+
+                        <Button
+                            Grid.Column="3"
+                            Style="{StaticResource IconCircleButtonStyle}"
+                            Width="24"
+                            Height="24"
+                            CornerRadius="12"
+                            TabIndex="4"
+                            ToolTipService.ToolTip="Contraer isla (o haz clic fuera)"
+                            AutomationProperties.Name="Contraer isla a modo compacto"
+                            Command="{x:Bind ViewModel.ToggleExpandedCommand}">
+                            <FontIcon
+                                FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets"
+                                Glyph="&#xE70E;"
+                                FontSize="10" />
+                        </Button>
+                    </Grid>
+
+                    <!-- Fila 1: Tarjeta Multimedia traslúcida con Marquee y controles circulares -->
+                    <Border
+                        Grid.Row="1"
+                        Background="#18FFFFFF"
+                        BorderBrush="#22FFFFFF"
+                        BorderThickness="1"
+                        CornerRadius="12"
+                        Padding="10,8">
+                        <Grid ColumnSpacing="10">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+
+                            <!-- Emblema musical -->
+                            <Border
+                                Grid.Column="0"
+                                Width="38"
+                                Height="38"
+                                CornerRadius="10"
+                                Background="#2638BDF8"
+                                BorderBrush="#4D38BDF8"
+                                BorderThickness="1"
+                                VerticalAlignment="Center">
+                                <FontIcon
+                                    FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets"
+                                    Glyph="&#xEC4F;"
+                                    FontSize="16"
+                                    Foreground="#FF38BDF8"
+                                    HorizontalAlignment="Center"
+                                    VerticalAlignment="Center" />
+                            </Border>
+
+                            <!-- Metadatos de pista (con desplazamiento horizontal) y artista -->
+                            <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
+                                <ScrollViewer
+                                    x:Name="ExpandedMarqueeScrollViewer"
+                                    HorizontalScrollBarVisibility="Hidden"
+                                    VerticalScrollBarVisibility="Disabled"
+                                    HorizontalScrollMode="Disabled"
+                                    VerticalScrollMode="Disabled">
+                                    <TextBlock
+                                        x:Name="MediaTitleTextBlock"
+                                        Text="{x:Bind ViewModel.MediaTitleText, Mode=OneWay}"
+                                        FontSize="13"
+                                        FontWeight="SemiBold"
+                                        Foreground="#FFF4F4F5"
+                                        MaxLines="1">
+                                        <TextBlock.RenderTransform>
+                                            <TranslateTransform x:Name="ExpandedTitleTranslateTransform" X="0" />
+                                        </TextBlock.RenderTransform>
+                                    </TextBlock>
+                                </ScrollViewer>
+                                <TextBlock
+                                    x:Name="MediaArtistTextBlock"
+                                    Text="{x:Bind ViewModel.MediaArtistText, Mode=OneWay}"
+                                    FontSize="11"
+                                    Foreground="#FFA1A1AA"
+                                    TextTrimming="CharacterEllipsis"
+                                    MaxLines="1" />
+                            </StackPanel>
+
+                            <!-- Botones de transporte con glifos nativos de Windows 11 -->
+                            <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
+                                <Button
+                                    Style="{StaticResource IconCircleButtonStyle}"
+                                    TabIndex="5"
+                                    ToolTipService.ToolTip="Pista anterior"
+                                    AutomationProperties.Name="Pista anterior"
+                                    Command="{x:Bind ViewModel.PreviousTrackCommand}">
+                                    <FontIcon
+                                        FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets"
+                                        Glyph="&#xE892;"
+                                        FontSize="11" />
+                                </Button>
+
+                                <Button
+                                    Style="{StaticResource AccentCircleButtonStyle}"
+                                    TabIndex="6"
+                                    ToolTipService.ToolTip="{x:Bind ViewModel.PlayPauseButtonText, Mode=OneWay}"
+                                    AutomationProperties.Name="Reproducir o pausar"
+                                    Command="{x:Bind ViewModel.PlayPauseMediaCommand}">
+                                    <FontIcon
+                                        FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets"
+                                        Glyph="{x:Bind ViewModel.PlayPauseGlyph, Mode=OneWay}"
+                                        FontSize="13" />
+                                </Button>
+
+                                <Button
+                                    Style="{StaticResource IconCircleButtonStyle}"
+                                    TabIndex="7"
+                                    ToolTipService.ToolTip="Siguiente pista"
+                                    AutomationProperties.Name="Siguiente pista"
+                                    Command="{x:Bind ViewModel.NextTrackCommand}">
+                                    <FontIcon
+                                        FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets"
+                                        Glyph="&#xE893;"
+                                        FontSize="11" />
+                                </Button>
+
+                                <Button
+                                    Style="{StaticResource PillSubtleButtonStyle}"
+                                    Content="{x:Bind ViewModel.MediaSourceBadgeText, Mode=OneWay}"
+                                    Padding="8,3"
+                                    TabIndex="8"
+                                    ToolTipService.ToolTip="Cambiar reproductor multimedia activo"
+                                    AutomationProperties.Name="Cambiar reproductor multimedia activo"
+                                    Command="{x:Bind ViewModel.CycleMediaPlayerCommand}" />
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+
+                    <!-- Fila 2: Bloque de Avisos (WhatsApp) y Control de Volumen Maestro -->
+                    <Grid Grid.Row="2" ColumnSpacing="8">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+
+                        <!-- Tarjeta de avisos -->
+                        <Border
+                            Grid.Column="0"
+                            Background="#12FFFFFF"
+                            BorderBrush="#1FFFFFFF"
+                            BorderThickness="1"
+                            CornerRadius="10"
+                            Padding="10,6">
+                            <Grid ColumnSpacing="8">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+
+                                <FontIcon
+                                    Grid.Column="0"
+                                    FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets"
+                                    Glyph="&#xE8BD;"
+                                    FontSize="13"
+                                    Foreground="#FF38BDF8"
+                                    VerticalAlignment="Center" />
+
+                                <StackPanel Grid.Column="1" Spacing="1" VerticalAlignment="Center">
+                                    <TextBlock
+                                        x:Name="NotificationHeadlineTextBlock"
+                                        Text="{x:Bind ViewModel.NotificationHeadlineText, Mode=OneWay}"
+                                        FontSize="11"
+                                        FontWeight="SemiBold"
+                                        Foreground="#FFF4F4F5"
+                                        TextTrimming="CharacterEllipsis"
+                                        MaxLines="1" />
+                                    <TextBlock
+                                        x:Name="NotificationBodyTextBlock"
+                                        Text="{x:Bind ViewModel.NotificationBodyText, Mode=OneWay}"
+                                        FontSize="10"
+                                        Foreground="#FFA1A1AA"
+                                        TextTrimming="CharacterEllipsis"
+                                        MaxLines="1" />
+                                </StackPanel>
+
+                                <Button
+                                    Grid.Column="2"
+                                    Style="{StaticResource PillSubtleButtonStyle}"
+                                    Visibility="{x:Bind ViewModel.HasPendingNotification, Mode=OneWay}"
+                                    Content="OK"
+                                    Padding="7,2"
+                                    TabIndex="9"
+                                    VerticalAlignment="Center"
+                                    AutomationProperties.Name="Descartar aviso actual"
+                                    Command="{x:Bind ViewModel.DismissNotificationCommand}" />
+                            </Grid>
+                        </Border>
+
+                        <!-- Cápsula de Volumen Maestro -->
+                        <Border
+                            Grid.Column="1"
+                            Background="#12FFFFFF"
+                            BorderBrush="#1FFFFFFF"
+                            BorderThickness="1"
+                            CornerRadius="10"
+                            Padding="6,4"
+                            VerticalAlignment="Stretch">
+                            <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+                                <Button
+                                    Style="{StaticResource IconCircleButtonStyle}"
+                                    Width="24"
+                                    Height="24"
+                                    CornerRadius="12"
+                                    TabIndex="10"
+                                    ToolTipService.ToolTip="Bajar volumen (-5%)"
+                                    AutomationProperties.Name="Bajar volumen maestro"
+                                    Command="{x:Bind ViewModel.VolumeDownCommand}">
+                                    <Border
+                                        Width="8"
+                                        Height="2"
+                                        CornerRadius="1"
+                                        Background="#FFF4F4F5"
+                                        HorizontalAlignment="Center"
+                                        VerticalAlignment="Center" />
+                                </Button>
+
+                                <Button
+                                    Style="{StaticResource PillSubtleButtonStyle}"
+                                    Background="Transparent"
+                                    BorderThickness="0"
+                                    Padding="6,2"
+                                    TabIndex="11"
+                                    ToolTipService.ToolTip="{x:Bind ViewModel.MuteButtonText, Mode=OneWay}"
+                                    AutomationProperties.Name="Alternar silencio de audio maestro"
+                                    Command="{x:Bind ViewModel.ToggleMuteCommand}">
+                                    <StackPanel Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
+                                        <FontIcon
+                                            FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets"
+                                            Glyph="{x:Bind ViewModel.VolumeGlyph, Mode=OneWay}"
+                                            FontSize="11"
+                                            Foreground="#FF38BDF8" />
+                                        <TextBlock
+                                            Text="{x:Bind ViewModel.MasterVolumeText, Mode=OneWay}"
+                                            FontSize="11"
+                                            FontWeight="SemiBold"
+                                            Foreground="#FFF4F4F5" />
+                                    </StackPanel>
+                                </Button>
+
+                                <Button
+                                    Style="{StaticResource IconCircleButtonStyle}"
+                                    Width="24"
+                                    Height="24"
+                                    CornerRadius="12"
+                                    TabIndex="12"
+                                    ToolTipService.ToolTip="Subir volumen (+5%)"
+                                    AutomationProperties.Name="Subir volumen maestro"
+                                    Command="{x:Bind ViewModel.VolumeUpCommand}">
+                                    <FontIcon
+                                        FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets"
+                                        Glyph="&#xE710;"
+                                        FontSize="10" />
+                                </Button>
+                            </StackPanel>
+                        </Border>
+                    </Grid>
+
+                    <!-- Fila 3: Barra Inferior (Selector de Materiales y Centrado Rápido) -->
+                    <Grid Grid.Row="3" VerticalAlignment="Bottom">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+
+                        <TextBlock
+                            Grid.Column="0"
+                            Text="Apariencia"
+                            FontSize="11"
+                            Foreground="#FF71717A"
+                            VerticalAlignment="Center" />
+
+                        <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                            <Button
+                                Style="{StaticResource PillSubtleButtonStyle}"
+                                Content="Sólido"
+                                TabIndex="13"
+                                AutomationProperties.Name="Aplicar tema Sólido"
+                                Command="{x:Bind ViewModel.SwitchToSolidThemeCommand}" />
+                            <Button
+                                Style="{StaticResource PillSubtleButtonStyle}"
+                                Content="Glass"
+                                TabIndex="14"
+                                AutomationProperties.Name="Aplicar tema Glass Acrylic"
+                                Command="{x:Bind ViewModel.SwitchToGlassThemeCommand}" />
+                            <Button
+                                Style="{StaticResource PillSubtleButtonStyle}"
+                                Content="Mica"
+                                TabIndex="15"
+                                AutomationProperties.Name="Aplicar tema Mica"
+                                Command="{x:Bind ViewModel.SwitchToMicaThemeCommand}" />
+                            <Button
+                                Style="{StaticResource PillSubtleButtonStyle}"
+                                Content="Centrar"
+                                TabIndex="16"
+                                ToolTipService.ToolTip="Restablecer al centro del monitor principal (Alt+Shift+I)"
+                                AutomationProperties.Name="Restablecer posición al centro del monitor principal"
+                                Command="{x:Bind ViewModel.ResetPositionToPrimaryMonitorCommand}" />
+                        </StackPanel>
+                    </Grid>
+                </Grid>
+            </Grid>
+        </Border>
+    </Grid>
+</Window>
