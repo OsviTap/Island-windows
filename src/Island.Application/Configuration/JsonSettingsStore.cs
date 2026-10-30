@@ -153,6 +153,18 @@ public sealed class JsonSettingsStore
             return false;
         }
 
+        if (document.SurfaceOpacityPercent is int opacity && (opacity < 0 || opacity > 100))
+        {
+            errorCode = "INVALID_SURFACE_OPACITY";
+            return false;
+        }
+        if (document.AccentColorHex is string accent &&
+            (accent.Length != 7 || accent[0] != '#' || !accent.AsSpan(1).ToString().All(Uri.IsHexDigit)))
+        {
+            errorCode = "INVALID_ACCENT_COLOR";
+            return false;
+        }
+
         if (document.EnabledModules is null || document.AllowedNotificationAppIds is null)
         {
             errorCode = "NULL_COLLECTIONS";

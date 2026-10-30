@@ -11,6 +11,7 @@ using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Imaging;
 using Windows.Storage.Streams;
+using Microsoft.UI.Composition.SystemBackdrops;
 
 namespace Island.App.ViewModels;
 
@@ -33,6 +34,7 @@ public sealed partial class MainViewModel : ObservableObject
     private DispatcherQueue? _dispatcherQueue;
     private byte[]? _lastArtworkData;
     private int _artworkGeneration;
+    private bool _backdropFailed;
 
     [ObservableProperty]
     public partial ImageSource? MediaArtwork { get; set; }
@@ -271,6 +273,7 @@ public sealed partial class MainViewModel : ObservableObject
 
     public void SetCursorHover(bool isCursorInside)
     {
+        if (isCursorInside && !_currentSettings.HoverPreviewEnabled) return;
         if (IsHoverPreviewMode == isCursorInside)
         {
             return;
@@ -508,14 +511,56 @@ public sealed partial class MainViewModel : ObservableObject
 
     private void ApplyAndPersistTheme(ThemeDefinition theme)
     {
-        var env = _environmentInspector.CaptureSnapshot();
-        _coordinator.ApplyTheme(theme, env);
         _currentSettings = _currentSettings with
         {
             SelectedThemeId = theme.Id,
             RequestedMaterialOverride = theme.RequestedMaterial
         };
+        ApplySettingsPreview(_currentSettings);
         TrySaveSettings();
+    }
+
+    public string AppearanceStatus => _backdropFailed
+        ? "No fue posible aplicar este efecto en Windows. Se muestra un fondo sólido."
+        : _coordinator.CurrentThemeState.StatusReasonCode switch
+    {
+        "HIGH_CONTRAST_ENFORCED" => "Windows está usando alto contraste; se muestra un fondo sólido.",
+        "SYSTEM_TRANSPARENCY_DISABLED_FALLBACK_SOLID" => "Windows tiene desactivados los efectos de transparencia; se muestra un fondo sólido.",
+        "RUNTIME_BACKDROP_UNSUPPORTED_FALLBACK_SOLID" => "Este equipo no admite el material elegido; se muestra un fondo sólido.",
+        _ => "La apariencia depende también de los efectos visuales de Windows."
+    };
+
+    public void ReportBackdropFailure(bool failed)
+    {
+        _backdropFailed = failed;
+        if (failed) ActiveBackgroundHex = BuiltInThemes.DefaultSolid.Colors.BackgroundHex;
+    }
+
+    public void ApplySettingsPreview(AppSettingsDocument settings)
+    {
+        _currentSettings = settings;
+        var theme = ThemeCustomization.Apply(_themeCatalog.GetByIdOrFallback(settings.SelectedThemeId), settings);
+        var material = settings.RequestedMaterialOverride ?? theme.RequestedMaterial;
+        bool supported = material switch
+        {
+            MaterialKind.Glass => DesktopAcrylicController.IsSupported(),
+            MaterialKind.Mica => MicaController.IsSupported(),
+            _ => true
+        };
+        _coordinator.ApplyTheme(theme, _environmentInspector.CaptureSnapshot(), material, supported);
+        if (!settings.HoverPreviewEnabled && IsHoverPreviewMode) IsHoverPreviewMode = false;
+        SyncState(_coordinator.CurrentState);
+    }
+
+    public bool SaveAppearanceSettings(AppSettingsDocument settings)
+    {
+        try
+        {
+            _settingsStore.SaveAtomically(settings);
+            ApplySettingsPreview(settings);
+            return true;
+        }
+        catch (Exception) { return false; }
     }
 
     private void TrySaveSettings()
@@ -561,7 +606,7 @@ public sealed partial class MainViewModel : ObservableObject
         PinGlyph = IsPinned ? "\uE77A" : "\uE718";
 
         var media = _coordinator.ActiveMediaView;
-        var artwork = media is null ? null : _lastKnownSessions.FirstOrDefault(s =>
+        var artwork = media is null || !_currentSettings.ShowArtwork ? null : _lastKnownSessions.FirstOrDefault(s =>
             string.Equals(s.SourceAppUserModelId, media.SourceAppUserModelId, StringComparison.OrdinalIgnoreCase))?.ThumbnailData;
         if (!ReferenceEquals(artwork, _lastArtworkData))
         {
@@ -649,8 +694,9 @@ public sealed partial class MainViewModel : ObservableObject
         {
             // Un material sólido de respaldo necesita una superficie opaca aunque
             // el tema solicitado haya definido un fondo translúcido.
-            ActiveBackgroundHex = themeState.EffectiveMaterial == EffectiveMaterialKind.Solid &&
-                                  themeState.RequestedMaterial != MaterialKind.Solid
+            ActiveBackgroundHex = (_backdropFailed && themeState.RequestedMaterial != MaterialKind.Solid) ||
+                                  (themeState.EffectiveMaterial == EffectiveMaterialKind.Solid &&
+                                  themeState.RequestedMaterial != MaterialKind.Solid)
                 ? BuiltInThemes.DefaultSolid.Colors.BackgroundHex
                 : colors.BackgroundHex;
             ActiveForegroundHex = colors.ForegroundHex;

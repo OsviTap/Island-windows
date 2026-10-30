@@ -68,12 +68,6 @@ public sealed partial class MainWindow : Window
         NotificationHeadlineTextBlock.Foreground = fgBrush;
         CompactBadgeTextBlock.Foreground = accentBrush;
 
-        foreach (var (button, material) in new[] { (SolidThemeButton, "Solid"), (GlassThemeButton, "Glass"), (MicaThemeButton, "Mica") })
-        {
-            bool selected = ViewModel.RequestedMaterialText == material;
-            button.BorderBrush = selected ? accentBrush : new SolidColorBrush(Color.FromArgb(0x24, 0xFF, 0xFF, 0xFF));
-            button.BorderThickness = new Thickness(selected ? 2 : 1);
-        }
 
         if (!string.Equals(_lastWatchedHeadline, ViewModel.CompactHeadlineText, StringComparison.Ordinal))
         {
@@ -92,6 +86,18 @@ public sealed partial class MainWindow : Window
             _expandedPauseTicks = 25;
             ExpandedTitleTranslateTransform.X = 0;
         }
+    }
+
+    private SettingsWindow? _settingsWindow;
+
+    private void OnOpenSettings(object sender, RoutedEventArgs e)
+    {
+        if (_settingsWindow is null)
+        {
+            _settingsWindow = new SettingsWindow(ViewModel);
+            _settingsWindow.Closed += (_, _) => _settingsWindow = null;
+        }
+        _settingsWindow.Activate();
     }
 
     private void OnDragPressed(object sender, PointerRoutedEventArgs e)
@@ -169,6 +175,12 @@ public sealed partial class MainWindow : Window
 
     private void OnMarqueeTimerTick(Microsoft.UI.Dispatching.DispatcherQueueTimer sender, object args)
     {
+        if (!ViewModel.CurrentSettings.AnimationsEnabled)
+        {
+            CompactHeadlineTranslateTransform.X = 0;
+            ExpandedTitleTranslateTransform.X = 0;
+            return;
+        }
         // 1. Ticker horizontal en vista compacta (Nivel 2)
         if (ViewModel.IsCompactMode && CompactMarqueeScrollViewer.ActualWidth > 10)
         {

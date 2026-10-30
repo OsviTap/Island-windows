@@ -1,4 +1,5 @@
 using Island.Core.Contracts;
+using Island.Core.Configuration;
 using Island.Core.Domain;
 using Island.Core.Theming;
 using Island.Core.Windowing;
@@ -8,6 +9,23 @@ namespace Island.Core.Tests;
 
 public sealed class Phase4LayoutAndThemesTests
 {
+    [Fact]
+    public void CustomAppearance_ChangesGlassSurfaceAndAccent_WithoutMakingSolidTranslucent()
+    {
+        var settings = AppSettingsDocument.CreateDefault() with
+        {
+            SurfaceOpacityPercent = 40,
+            AccentColorHex = "#A78BFA",
+            AnimationsEnabled = false
+        };
+        var glass = ThemeCustomization.Apply(BuiltInThemes.DefaultGlass, settings);
+        var solid = ThemeCustomization.Apply(BuiltInThemes.DefaultSolid, settings);
+        Assert.Equal("#660E1015", glass.Colors.BackgroundHex);
+        Assert.Equal("#A78BFA", glass.Colors.AccentHex);
+        Assert.Equal(AnimationProfile.Disabled, glass.AnimationProfile);
+        Assert.Equal(BuiltInThemes.DefaultSolid.Colors.BackgroundHex, solid.Colors.BackgroundHex);
+    }
+
     [Theory]
     [InlineData(0.1, 0.1)]
     [InlineData(0.9, 0.9)]

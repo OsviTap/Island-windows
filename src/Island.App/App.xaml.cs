@@ -108,11 +108,17 @@ public partial class App : Microsoft.UI.Xaml.Application
 
         coordinator.SetAllowedNotificationApps(settingsResult.Settings.AllowedNotificationAppIds);
 
-        var selectedTheme = themeCatalog.GetByIdOrFallback(settingsResult.Settings.SelectedThemeId);
+        var selectedTheme = ThemeCustomization.Apply(themeCatalog.GetByIdOrFallback(settingsResult.Settings.SelectedThemeId), settingsResult.Settings);
         var appliedTheme = coordinator.ApplyTheme(
             selectedTheme,
             envSnapshot,
-            settingsResult.Settings.RequestedMaterialOverride);
+            settingsResult.Settings.RequestedMaterialOverride,
+            (settingsResult.Settings.RequestedMaterialOverride ?? selectedTheme.RequestedMaterial) switch
+            {
+                MaterialKind.Glass => DesktopAcrylicController.IsSupported(),
+                MaterialKind.Mica => MicaController.IsSupported(),
+                _ => true
+            });
 
         coordinator.ReportModuleCapability(new IntegrationCapabilityReport(
             IntegrationModuleId.Environment,
@@ -225,7 +231,8 @@ public partial class App : Microsoft.UI.Xaml.Application
             if (lastAppliedMaterial != material)
             {
                 lastAppliedMaterial = material;
-                ApplyEffectiveSystemBackdrop(_window, material);
+                viewModel.ReportBackdropFailure(!ApplyEffectiveSystemBackdrop(_window, material));
+                _window.ApplyVisualThemeToPill();
             }
 
             _animTargetWidthDip = viewModel.PillWidthDip;
@@ -267,7 +274,8 @@ public partial class App : Microsoft.UI.Xaml.Application
             coordinator.SetUserInteraction(IslandInteractionState.Passive, IslandVisibility.Compact);
         }
 
-        ApplyEffectiveSystemBackdrop(_window, coordinator.CurrentThemeState.EffectiveMaterial);
+        viewModel.ReportBackdropFailure(!ApplyEffectiveSystemBackdrop(_window, coordinator.CurrentThemeState.EffectiveMaterial));
+        _window.ApplyVisualThemeToPill();
         _windowController.ApplyLayoutAndRegion(
             coordinator.CurrentState,
             coordinator.CurrentThemeState.Theme,
@@ -560,7 +568,7 @@ public partial class App : Microsoft.UI.Xaml.Application
         Exit();
     }
 
-    private static void ApplyEffectiveSystemBackdrop(Window window, EffectiveMaterialKind effectiveMaterial)
+    private static bool ApplyEffectiveSystemBackdrop(Window window, EffectiveMaterialKind effectiveMaterial)
     {
         try
         {
@@ -570,10 +578,12 @@ public partial class App : Microsoft.UI.Xaml.Application
                 EffectiveMaterialKind.Mica when MicaController.IsSupported() => new MicaBackdrop(),
                 _ => null
             };
+            return effectiveMaterial is not (EffectiveMaterialKind.DesktopAcrylic or EffectiveMaterialKind.Mica) || window.SystemBackdrop is not null;
         }
         catch (Exception)
         {
             window.SystemBackdrop = null;
+            return false;
         }
     }
 

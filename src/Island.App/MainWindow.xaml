@@ -596,33 +596,18 @@
 
                         <TextBlock
                             Grid.Column="0"
-                            Text="Apariencia"
+                            Text="Personaliza tu isla"
                             FontSize="11"
                             Foreground="#FF71717A"
                             VerticalAlignment="Center" />
 
                         <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
                             <Button
-                                x:Name="SolidThemeButton"
                                 Style="{StaticResource PillSubtleButtonStyle}"
-                                Content="Sólido"
+                                Content="⚙  Configuración"
                                 TabIndex="13"
-                                AutomationProperties.Name="Aplicar tema Sólido"
-                                Command="{x:Bind ViewModel.SwitchToSolidThemeCommand}" />
-                            <Button
-                                x:Name="GlassThemeButton"
-                                Style="{StaticResource PillSubtleButtonStyle}"
-                                Content="Glass"
-                                TabIndex="14"
-                                AutomationProperties.Name="Aplicar tema Glass Acrylic"
-                                Command="{x:Bind ViewModel.SwitchToGlassThemeCommand}" />
-                            <Button
-                                x:Name="MicaThemeButton"
-                                Style="{StaticResource PillSubtleButtonStyle}"
-                                Content="Mica"
-                                TabIndex="15"
-                                AutomationProperties.Name="Aplicar tema Mica"
-                                Command="{x:Bind ViewModel.SwitchToMicaThemeCommand}" />
+                                AutomationProperties.Name="Abrir configuración de la isla"
+                                Click="OnOpenSettings" />
                             <Button
                                 Style="{StaticResource PillSubtleButtonStyle}"
                                 Content="Centrar"

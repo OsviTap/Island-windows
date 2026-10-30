@@ -1,5 +1,11 @@
 # 00. Bitácora General del Proyecto — Isla Flotante para Windows 11
 
+## Configuración de apariencia — 30/10/2026
+
+- Se incorporó una ventana de configuración con vista previa, selección de Cristal, Mica o Sólido, intensidad de la capa, color de acento, portada, vista previa al pasar el cursor y animaciones. Los ajustes se guardan en la configuración existente; cancelar restaura los valores anteriores.
+- Se consulta la disponibilidad del material y se informa cuando se usa un fondo sólido por configuración de Windows o fallo de aplicación. La intensidad controla la capa de color propia y no el desenfoque del sistema.
+- Preparado en Linux sin SDK .NET ni sesión Windows. Compilación, temas efectivos, guardado, cancelación e interacción con otros monitores están pendientes de validación real en Windows.
+
 ## Portada y arrastre en las tres vistas — 30/10/2026
 
 - Se añadió arrastre desde las vistas pequeña y compacta; un clic sin arrastrar abre el panel. El encabezado sigue sirviendo para mover el panel abierto.
