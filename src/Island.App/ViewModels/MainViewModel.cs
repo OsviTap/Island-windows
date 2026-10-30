@@ -75,6 +75,15 @@ public sealed partial class MainViewModel : ObservableObject
     public partial string PlayPauseGlyph { get; set; } = "\uE768";
 
     [ObservableProperty]
+    public partial bool CanPrevious { get; set; }
+
+    [ObservableProperty]
+    public partial bool CanNext { get; set; }
+
+    [ObservableProperty]
+    public partial bool CanTogglePlayback { get; set; }
+
+    [ObservableProperty]
     public partial string VolumeGlyph { get; set; } = "\uE767";
 
     [ObservableProperty]
@@ -534,6 +543,15 @@ public sealed partial class MainViewModel : ObservableObject
     {
         _backdropFailed = failed;
         if (failed) ActiveBackgroundHex = BuiltInThemes.DefaultSolid.Colors.BackgroundHex;
+        else
+        {
+            var state = _coordinator.CurrentThemeState;
+            ActiveBackgroundHex = state.IsHighContrastActive
+                ? state.Theme.Colors.HighContrastBackgroundHex
+                : state.EffectiveMaterial == EffectiveMaterialKind.Solid && state.RequestedMaterial != MaterialKind.Solid
+                    ? BuiltInThemes.DefaultSolid.Colors.BackgroundHex
+                    : state.Theme.Colors.BackgroundHex;
+        }
     }
 
     public void ApplySettingsPreview(AppSettingsDocument settings)
@@ -606,6 +624,9 @@ public sealed partial class MainViewModel : ObservableObject
         PinGlyph = IsPinned ? "\uE77A" : "\uE718";
 
         var media = _coordinator.ActiveMediaView;
+        CanPrevious = media?.Capabilities.CanSkipPrevious ?? false;
+        CanNext = media?.Capabilities.CanSkipNext ?? false;
+        CanTogglePlayback = media?.Capabilities.CanTogglePlayPause ?? false;
         var artwork = media is null || !_currentSettings.ShowArtwork ? null : _lastKnownSessions.FirstOrDefault(s =>
             string.Equals(s.SourceAppUserModelId, media.SourceAppUserModelId, StringComparison.OrdinalIgnoreCase))?.ThumbnailData;
         if (!ReferenceEquals(artwork, _lastArtworkData))

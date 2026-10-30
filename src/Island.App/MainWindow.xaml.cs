@@ -66,7 +66,25 @@ public sealed partial class MainWindow : Window
         CompactHeadlineTextBlock.Foreground = fgBrush;
         MediaTitleTextBlock.Foreground = fgBrush;
         NotificationHeadlineTextBlock.Foreground = fgBrush;
-        CompactBadgeTextBlock.Foreground = accentBrush;
+        MiniAccentDot.Background = accentBrush;
+        MiniAccentIcon.Foreground = accentBrush;
+        HeaderAccentDot.Background = accentBrush;
+        CompactAccentIcon.Foreground = accentBrush;
+        ExpandedAccentIcon.Foreground = accentBrush;
+        NotificationAccentIcon.Foreground = accentBrush;
+        var accent = ParseColorHex(ViewModel.ActiveAccentHex, Color.FromArgb(255, 56, 189, 248));
+        var accentSurface = new SolidColorBrush(Color.FromArgb(65, accent.R, accent.G, accent.B));
+        var accentBorder = new SolidColorBrush(Color.FromArgb(150, accent.R, accent.G, accent.B));
+        CompactArtworkFrame.Background = accentSurface;
+        CompactArtworkFrame.BorderBrush = accentBorder;
+        ExpandedArtworkFrame.Background = accentSurface;
+        ExpandedArtworkFrame.BorderBrush = accentBorder;
+        CompactPlayButton.Background = accentSurface;
+        CompactPlayButton.BorderBrush = accentBorder;
+        CompactPlayButton.Foreground = fgBrush;
+        ExpandedPlayButton.Background = accentSurface;
+        ExpandedPlayButton.BorderBrush = accentBorder;
+        ExpandedPlayButton.Foreground = fgBrush;
 
 
         if (!string.Equals(_lastWatchedHeadline, ViewModel.CompactHeadlineText, StringComparison.Ordinal))
@@ -89,6 +107,7 @@ public sealed partial class MainWindow : Window
     }
 
     private SettingsWindow? _settingsWindow;
+    public bool IsSettingsOpen => _settingsWindow is not null;
 
     private void OnOpenSettings(object sender, RoutedEventArgs e)
     {

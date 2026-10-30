@@ -164,6 +164,12 @@ public sealed class JsonSettingsStore
             errorCode = "INVALID_ACCENT_COLOR";
             return false;
         }
+        if (document.SurfaceColorHex is string surface &&
+            (surface.Length != 7 || surface[0] != '#' || !surface.AsSpan(1).ToString().All(Uri.IsHexDigit)))
+        {
+            errorCode = "INVALID_SURFACE_COLOR";
+            return false;
+        }
 
         if (document.EnabledModules is null || document.AllowedNotificationAppIds is null)
         {

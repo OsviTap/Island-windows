@@ -15,9 +15,11 @@ using Island.Windows.Notifications;
 using Island.Windows.Runtime;
 using Island.Windows.Windowing;
 using Microsoft.UI.Composition.SystemBackdrops;
+using Microsoft.UI.Composition;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Media;
+using WinRT;
 
 namespace Island.App;
 
@@ -27,6 +29,9 @@ public partial class App : Microsoft.UI.Xaml.Application
     private IslandWindowController? _windowController;
     private GsmtcMediaSessionProvider? _mediaProvider;
     private HybridNotificationMonitor? _notificationMonitor;
+    private DesktopAcrylicController? _acrylicController;
+    private MicaController? _micaController;
+    private SystemBackdropConfiguration? _backdropConfiguration;
 
     // IMPORTANTE: los DispatcherQueueTimer deben mantenerse como campos. Si se guardan en variables
     // locales, el recolector de basura los libera y dejan de dispararse silenciosamente.
@@ -163,6 +168,7 @@ public partial class App : Microsoft.UI.Xaml.Application
         ConfigureBorderlessFloatingWindow(_window);
         _window.Closed += (_, _) =>
         {
+            DisposeBackdrop();
             logger.Log(
                 DiagnosticLogLevel.Info,
                 "Windowing",
@@ -310,7 +316,7 @@ public partial class App : Microsoft.UI.Xaml.Application
                 }
 
                 // Nivel 3 -> Nivel 1: clic en cualquier lugar fuera de la isla (salvo que esté fijada).
-                if (!isCursorInside && isNewPress)
+                if (!isCursorInside && isNewPress && !_window.IsSettingsOpen)
                 {
                     viewModel.CollapseFromOutsideClick();
                     return;
@@ -568,20 +574,45 @@ public partial class App : Microsoft.UI.Xaml.Application
         Exit();
     }
 
-    private static bool ApplyEffectiveSystemBackdrop(Window window, EffectiveMaterialKind effectiveMaterial)
+    private void DisposeBackdrop()
     {
+        _acrylicController?.Dispose();
+        _micaController?.Dispose();
+        _acrylicController = null;
+        _micaController = null;
+        _backdropConfiguration = null;
+    }
+
+    private bool ApplyEffectiveSystemBackdrop(Window window, EffectiveMaterialKind effectiveMaterial)
+    {
+        DisposeBackdrop();
         try
         {
-            window.SystemBackdrop = effectiveMaterial switch
+            window.SystemBackdrop = null;
+            if (effectiveMaterial is not (EffectiveMaterialKind.DesktopAcrylic or EffectiveMaterialKind.Mica)) return true;
+            // The island intentionally does not steal focus. Keep the backdrop visually active
+            // while preserving Windows' system-wide transparency and energy policies.
+            _backdropConfiguration = new SystemBackdropConfiguration { IsInputActive = true, Theme = SystemBackdropTheme.Dark };
+            var target = window.As<ICompositionSupportsSystemBackdrop>();
+            if (effectiveMaterial == EffectiveMaterialKind.DesktopAcrylic && DesktopAcrylicController.IsSupported())
             {
-                EffectiveMaterialKind.DesktopAcrylic when DesktopAcrylicController.IsSupported() => new DesktopAcrylicBackdrop(),
-                EffectiveMaterialKind.Mica when MicaController.IsSupported() => new MicaBackdrop(),
-                _ => null
-            };
-            return effectiveMaterial is not (EffectiveMaterialKind.DesktopAcrylic or EffectiveMaterialKind.Mica) || window.SystemBackdrop is not null;
+                _acrylicController = new DesktopAcrylicController { Kind = DesktopAcrylicKind.Thin };
+                _acrylicController.AddSystemBackdropTarget(target);
+                _acrylicController.SetSystemBackdropConfiguration(_backdropConfiguration);
+                return true;
+            }
+            if (effectiveMaterial == EffectiveMaterialKind.Mica && MicaController.IsSupported())
+            {
+                _micaController = new MicaController();
+                _micaController.AddSystemBackdropTarget(target);
+                _micaController.SetSystemBackdropConfiguration(_backdropConfiguration);
+                return true;
+            }
+            return false;
         }
         catch (Exception)
         {
+            DisposeBackdrop();
             window.SystemBackdrop = null;
             return false;
         }

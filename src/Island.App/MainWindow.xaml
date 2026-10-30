@@ -99,6 +99,7 @@
 
                     <!-- Punto luminoso de actividad -->
                     <Border
+                        x:Name="MiniAccentDot"
                         Grid.Column="0"
                         Width="6"
                         Height="6"
@@ -117,6 +118,7 @@
 
                     <!-- Micro-indicador de onda musical / estado -->
                     <FontIcon
+                        x:Name="MiniAccentIcon"
                         Grid.Column="2"
                         FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets"
                         Glyph="&#xEC4F;"
@@ -132,7 +134,7 @@
                 <Grid
                     x:Name="CompactContentGrid"
                     Visibility="{x:Bind ViewModel.IsCompactMode, Mode=OneWay}"
-                    ColumnSpacing="10"
+                    ColumnSpacing="6"
                     VerticalAlignment="Center">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto" />
@@ -140,31 +142,17 @@
                         <ColumnDefinition Width="Auto" />
                     </Grid.ColumnDefinitions>
 
-                    <!-- Insignia de estado con punto luminoso e indicador -->
+                    <!-- Portada o icono cuando el reproductor no proporciona imagen -->
                     <Border
+                        x:Name="CompactArtworkFrame"
                         Grid.Column="0"
-                        Background="#2438BDF8"
-                        BorderBrush="#4D38BDF8"
-                        BorderThickness="1"
-                        CornerRadius="10"
-                        Padding="8,3"
+                        Width="32" Height="32" CornerRadius="9"
+                        Background="#2438BDF8" BorderBrush="#4D38BDF8" BorderThickness="1"
                         VerticalAlignment="Center">
-                        <StackPanel Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
-                            <Border
-                                Width="6"
-                                Height="6"
-                                CornerRadius="3"
-                                Background="#FF38BDF8"
-                                VerticalAlignment="Center" />
-                            <TextBlock
-                                x:Name="CompactBadgeTextBlock"
-                                Text="{x:Bind ViewModel.CompactBadgeText, Mode=OneWay}"
-                                FontSize="10"
-                                FontWeight="Bold"
-                                CharacterSpacing="30"
-                                Foreground="#FF38BDF8"
-                                VerticalAlignment="Center" />
-                        </StackPanel>
+                        <Grid>
+                            <FontIcon x:Name="CompactAccentIcon" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" Glyph="&#xEC4F;" FontSize="13" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                            <Image Source="{x:Bind ViewModel.MediaArtwork, Mode=OneWay}" Width="30" Height="30" Stretch="UniformToFill" />
+                        </Grid>
                     </Border>
 
                     <!-- Contenedor de desplazamiento horizontal continuo (Marquee) para título/artista -->
@@ -190,22 +178,28 @@
                         </TextBlock>
                     </ScrollViewer>
 
-                    <!-- Botón circular limpio con chevron hacia abajo para desplegar la isla -->
-                    <Button
-                        Grid.Column="2"
-                        Style="{StaticResource IconCircleButtonStyle}"
-                        Width="24"
-                        Height="24"
-                        CornerRadius="12"
-                        TabIndex="1"
-                        ToolTipService.ToolTip="Clic para abrir el panel completo"
-                        AutomationProperties.Name="Expandir isla flotante"
-                        Command="{x:Bind ViewModel.ToggleExpandedCommand}">
-                        <FontIcon
-                            FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets"
-                            Glyph="&#xE70D;"
-                            FontSize="10" />
-                    </Button>
+                    <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="3" VerticalAlignment="Center">
+                        <Button Style="{StaticResource IconCircleButtonStyle}" Width="28" Height="28"
+                                IsEnabled="{x:Bind ViewModel.CanPrevious, Mode=OneWay}" ToolTipService.ToolTip="Pista anterior"
+                                AutomationProperties.Name="Pista anterior" Command="{x:Bind ViewModel.PreviousTrackCommand}">
+                            <FontIcon FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" Glyph="&#xE892;" FontSize="11" />
+                        </Button>
+                        <Button x:Name="CompactPlayButton" Style="{StaticResource AccentCircleButtonStyle}"
+                                IsEnabled="{x:Bind ViewModel.CanTogglePlayback, Mode=OneWay}" ToolTipService.ToolTip="{x:Bind ViewModel.PlayPauseButtonText, Mode=OneWay}"
+                                AutomationProperties.Name="Reproducir o pausar" Command="{x:Bind ViewModel.PlayPauseMediaCommand}">
+                            <FontIcon FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" Glyph="{x:Bind ViewModel.PlayPauseGlyph, Mode=OneWay}" FontSize="13" />
+                        </Button>
+                        <Button Style="{StaticResource IconCircleButtonStyle}" Width="28" Height="28"
+                                IsEnabled="{x:Bind ViewModel.CanNext, Mode=OneWay}" ToolTipService.ToolTip="Siguiente pista"
+                                AutomationProperties.Name="Siguiente pista" Command="{x:Bind ViewModel.NextTrackCommand}">
+                            <FontIcon FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" Glyph="&#xE893;" FontSize="11" />
+                        </Button>
+                        <Button Style="{StaticResource IconCircleButtonStyle}" Width="28" Height="28"
+                                ToolTipService.ToolTip="Abrir panel completo" AutomationProperties.Name="Abrir panel completo"
+                                Command="{x:Bind ViewModel.ToggleExpandedCommand}">
+                            <FontIcon FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" Glyph="&#xE70D;" FontSize="10" />
+                        </Button>
+                    </StackPanel>
                 </Grid>
 
                 <!-- ========================================================================= -->
@@ -241,6 +235,7 @@
                                     PointerReleased="OnDragReleased" PointerCaptureLost="OnDragCaptureLost"
                                     ToolTipService.ToolTip="Arrastra aquí para mover la isla">
                             <Border
+                                x:Name="HeaderAccentDot"
                                 Width="8"
                                 Height="8"
                                 CornerRadius="4"
@@ -355,6 +350,7 @@
 
                             <!-- Emblema musical -->
                             <Border
+                                x:Name="ExpandedArtworkFrame"
                                 Grid.Column="0"
                                 Width="48"
                                 Height="48"
@@ -365,6 +361,7 @@
                                 VerticalAlignment="Center">
                                 <Grid>
                                 <FontIcon
+                                    x:Name="ExpandedAccentIcon"
                                     FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets"
                                     Glyph="&#xEC4F;"
                                     FontSize="16"
@@ -412,6 +409,7 @@
                                     Style="{StaticResource IconCircleButtonStyle}"
                                     TabIndex="5"
                                     ToolTipService.ToolTip="Pista anterior"
+                                    IsEnabled="{x:Bind ViewModel.CanPrevious, Mode=OneWay}"
                                     AutomationProperties.Name="Pista anterior"
                                     Command="{x:Bind ViewModel.PreviousTrackCommand}">
                                     <FontIcon
@@ -422,8 +420,10 @@
 
                                 <Button
                                     Style="{StaticResource AccentCircleButtonStyle}"
+                                    x:Name="ExpandedPlayButton"
                                     TabIndex="6"
                                     ToolTipService.ToolTip="{x:Bind ViewModel.PlayPauseButtonText, Mode=OneWay}"
+                                    IsEnabled="{x:Bind ViewModel.CanTogglePlayback, Mode=OneWay}"
                                     AutomationProperties.Name="Reproducir o pausar"
                                     Command="{x:Bind ViewModel.PlayPauseMediaCommand}">
                                     <FontIcon
@@ -436,6 +436,7 @@
                                     Style="{StaticResource IconCircleButtonStyle}"
                                     TabIndex="7"
                                     ToolTipService.ToolTip="Siguiente pista"
+                                    IsEnabled="{x:Bind ViewModel.CanNext, Mode=OneWay}"
                                     AutomationProperties.Name="Siguiente pista"
                                     Command="{x:Bind ViewModel.NextTrackCommand}">
                                     <FontIcon
@@ -480,6 +481,7 @@
 
                                 <FontIcon
                                     Grid.Column="0"
+                                    x:Name="NotificationAccentIcon"
                                     FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets"
                                     Glyph="&#xE8BD;"
                                     FontSize="13"

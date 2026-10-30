@@ -1,5 +1,11 @@
 # 00. Bitácora General del Proyecto — Isla Flotante para Windows 11
 
+## Vista compacta y materiales — 30/10/2026
+
+- Se incorporaron portada y controles multimedia a la vista compacta, condicionados a las capacidades publicadas por el reproductor.
+- El acento se aplica a indicadores, marcos y controles; la configuración incluye además tonos de fondo y restauración de apariencia.
+- Se usa un controlador de material para mantener el aspecto activo en la isla sin tomar el foco, respetando las políticas de Windows. La aplicación del material, controles, guardado y contraste requieren comprobación real en Windows: no se compiló ni ejecutó en este entorno Linux.
+
 ## Configuración de apariencia — 30/10/2026
 
 - Se incorporó una ventana de configuración con vista previa, selección de Cristal, Mica o Sólido, intensidad de la capa, color de acento, portada, vista previa al pasar el cursor y animaciones. Los ajustes se guardan en la configuración existente; cancelar restaura los valores anteriores.

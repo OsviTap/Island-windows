@@ -7,6 +7,12 @@ public static class ThemeCustomization
     public static ThemeDefinition Apply(ThemeDefinition theme, AppSettingsDocument settings)
     {
         var colors = theme.Colors;
+        if (settings.SurfaceColorHex is { Length: 7 } surface)
+        {
+            string existing = colors.BackgroundHex.TrimStart('#');
+            string alpha = theme.RequestedMaterial == MaterialKind.Solid ? "FF" : existing.Length == 8 ? existing[..2] : "FF";
+            colors = colors with { BackgroundHex = $"#{alpha}{surface[1..]}" };
+        }
         if (settings.SurfaceOpacityPercent is int opacity && theme.RequestedMaterial != MaterialKind.Solid)
         {
             var hex = colors.BackgroundHex.TrimStart('#');

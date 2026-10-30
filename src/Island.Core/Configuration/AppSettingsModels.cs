@@ -24,6 +24,7 @@ public sealed record AppSettingsDocument(
     public string? AnchorMonitorDeviceName { get; init; }
     public int? SurfaceOpacityPercent { get; init; }
     public string? AccentColorHex { get; init; }
+    public string? SurfaceColorHex { get; init; }
     public bool ShowArtwork { get; init; } = true;
     public bool HoverPreviewEnabled { get; init; } = true;
     public bool AnimationsEnabled { get; init; } = true;

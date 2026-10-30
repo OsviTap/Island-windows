@@ -123,8 +123,8 @@ public static class BuiltInThemes
         Density: VisualDensity.Compact,
         AnimationProfile: AnimationProfile.Normal,
         CornerRadius: 16.0,
-        CompactWidth: 260.0,
-        CompactHeight: 40.0,
+        CompactWidth: 340.0,
+        CompactHeight: 48.0,
         ExpandedWidth: 460.0,
         ExpandedHeight: 242.0,
         Colors: new ThemeSemanticColors(

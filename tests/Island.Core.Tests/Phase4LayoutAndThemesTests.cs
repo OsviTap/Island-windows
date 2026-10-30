@@ -26,6 +26,14 @@ public sealed class Phase4LayoutAndThemesTests
         Assert.Equal(BuiltInThemes.DefaultSolid.Colors.BackgroundHex, solid.Colors.BackgroundHex);
     }
 
+    [Fact]
+    public void CustomSurface_PreservesSolidOpacity_AndGlassIntensity()
+    {
+        var settings = AppSettingsDocument.CreateDefault() with { SurfaceOpacityPercent = 40, SurfaceColorHex = "#11213A" };
+        Assert.Equal("#6611213A", ThemeCustomization.Apply(BuiltInThemes.DefaultGlass, settings).Colors.BackgroundHex);
+        Assert.Equal("#FF11213A", ThemeCustomization.Apply(BuiltInThemes.DefaultSolid, settings).Colors.BackgroundHex);
+    }
+
     [Theory]
     [InlineData(0.1, 0.1)]
     [InlineData(0.9, 0.9)]
