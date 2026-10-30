@@ -187,4 +187,6 @@
   - Inicialización de repositorio Git con `.gitignore` exhaustivo (excluyendo cachés locales `.dotnet`, `.nuget`, salidas `bin`/`obj`, paquetes `artifacts` y carpetas de pruebas locales `AppListaParaUsar/`, `IslaDinamica_v*`).
   - Creación de [`README.md`](file:///d:/Proyectos/Widget%20windows/README.md) con documentación técnica en español, arquitectura en 4 capas, guía de compilación y matriz de interacción en 3 niveles.
   - Preparación de commits y verificación de credenciales remotas para GitHub.
+  - Repositorio remoto vinculado con éxito: [`https://github.com/OsviTap/Island-windows.git`](https://github.com/OsviTap/Island-windows.git).
+  - Push completado exitosamente en rama `main` rastreando `origin/main`.
 
